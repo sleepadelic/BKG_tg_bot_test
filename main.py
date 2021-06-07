@@ -3,6 +3,7 @@ import yaml
 import Models
 import secret
 import telebot
+import settings
 from Models import User as User
 
 bot = telebot.AsyncTeleBot(secret.Token)
@@ -27,18 +28,22 @@ def main_handler(message: telebot.types.Message):
             user = u
             user.last_action_time = time_now
         else:
-            session_time_check(time_now, u)
+            if settings.isSessionCheckEnabled:
+                session_time_check(time_now, u)
 
     if user is None:
         user = create_user(message.from_user.id)
 
     if user.state == 'init':
-        bot.send_message(user.id, "Бот для загрузки информации на портал bkg.sibadi.org, приветствует тебя")
+        bot.send_message(user.id, "Бот для загрузки информации на портал bkg.sibadi.org, приветствует тебя!").wait()
+        bot.send_message(user.id, "Отправь мне 'начать' или 'отправить', чтобы загрузить фото-обращение")
+        user.state = 'state_ask_type'
+        return
+
+    if user.state == 'state_ask_type':
         user.issue = Models.Issue()
         user.issue.send_time = datetime.datetime.now()
-        user.state = 'state_ask_type'
-        # return
-    if user.state == 'state_ask_type':
+
         bot.send_message(user.id, "Какой тип обращения?")
         user.state = 'state_ask_photo'
         return
@@ -84,7 +89,8 @@ def main_handler(message: telebot.types.Message):
         user.issue.description = message.text
         bot.send_message(user.id, 'Обращение успешно сохранено')
         issue = user.issue
-        filepath: str = "data/" + user.issue.type + "_" + str(user.issue.send_time.timestamp()) + "_" + str(user.id) + ".yaml"
+        filepath: str = "data/" + user.issue.type + "_" + str(user.issue.send_time.timestamp()) + "_" + str(
+            user.id) + ".yaml"
         save_issue_to_yaml(filepath, issue)
         user.state = 'init'
 
