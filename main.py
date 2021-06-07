@@ -1,5 +1,4 @@
 import datetime
-import requests
 import yaml
 import Models
 import secret
@@ -10,40 +9,37 @@ bot = telebot.AsyncTeleBot(secret.Token)
 Users = []
 
 
-def botmain():
+def bot_main():
     bot.polling(none_stop=True, interval=0)
 
 
 @bot.message_handler(content_types=['text', 'photo', 'location'])
 def main_handler(message: telebot.types.Message):
-    # users flush
-    us: User
-    for us in Users:
-        # if us.last_action_time
-        pass
     # user auth
     # TODO add login to log
 
     user = None
+    u: User
     user: User
+    time_now = datetime.datetime.now()
     for u in Users:
         if u.id == message.from_user.id:
             user = u
+            user.last_action_time = time_now
+        else:
+            session_time_check(time_now, u)
 
     if user is None:
-        user = User()
-        user.id = message.from_user.id
-        Users.append(user)
+        user = create_user(message.from_user.id)
 
-    user.last_action_time = datetime.datetime.now()
     if user.state == 'init':
-        bot.send_message(user.id, "Welcome message")
+        bot.send_message(user.id, "Бот для загрузки информации на портал bkg.sibadi.org, приветствует тебя")
         user.issue = Models.Issue()
         user.issue.send_time = datetime.datetime.now()
         user.state = 'state_ask_type'
         # return
     if user.state == 'state_ask_type':
-        bot.send_message(user.id, "Напишите тип обращения")
+        bot.send_message(user.id, "Какой тип обращения?")
         user.state = 'state_ask_photo'
         return
     if user.state == 'state_ask_photo':
@@ -60,7 +56,8 @@ def main_handler(message: telebot.types.Message):
             fileID = message.photo[-1].file_id
             file_info = bot.get_file(fileID).wait()
             downloaded_file = bot.download_file(file_info.file_path)
-            outfilepath ="data/" + user.issue.type + "_" + str(user.issue.send_time.timestamp()) + "_" + str(user.id) + ".jpg"
+            outfilepath = "data/" + user.issue.type + "_" + str(user.issue.send_time.timestamp()) + "_" + str(
+                user.id) + ".jpg"
             user.issue.image = outfilepath
             with open(outfilepath, 'wb') as new_file:
                 new_file.write(downloaded_file.wait())
@@ -86,12 +83,35 @@ def main_handler(message: telebot.types.Message):
         # TODO add to log
         user.issue.description = message.text
         bot.send_message(user.id, 'Обращение успешно сохранено')
-        filepath = user.issue.type + "_" + str(user.issue.send_time.timestamp()) + "_" + str(user.id)
-        filepath = filepath.replace(' ', '')
-        with open(f'data/{filepath}.yaml', 'w', encoding="utf-8") as f:
-            yaml.dump(user.issue, f, default_flow_style=False, allow_unicode=True)
+        issue = user.issue
+        filepath: str = "data/" + user.issue.type + "_" + str(user.issue.send_time.timestamp()) + "_" + str(user.id) + ".yaml"
+        save_issue_to_yaml(filepath, issue)
         user.state = 'init'
 
-if __name__ == '__main__':
-    botmain()
 
+def save_issue_to_yaml(filepath, issue):
+    filepath = filepath.replace(' ', '')
+    with open(filepath, 'w', encoding="utf-8") as f:
+        yaml.dump(issue, f, default_flow_style=False, allow_unicode=True)
+
+
+def session_time_check(time_now, user):
+    if time_now - user.last_action_time >= datetime.timedelta(minutes=20):
+        if user.state != 'init':
+            bot.send_message(user.id, "Время сессии истекло, до скорого!")
+        Users.remove(user)
+    if time_now - user.last_action_time >= datetime.timedelta(minutes=15):
+        if user.state != 'init':
+            bot.send_message(user.id, "Время сессии истекает, осталось 5 минут!")
+
+
+def create_user(user_id):
+    user = User()
+    user.id = user_id
+    Users.append(user)
+    user.last_action_time = datetime.datetime.now()
+    return user
+
+
+if __name__ == '__main__':
+    bot_main()
