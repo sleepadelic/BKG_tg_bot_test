@@ -58,13 +58,14 @@ def main_handler(message: telebot.types.Message):
             main_handler(message)
     if user.state == 'state_ask_geo_or_address':
         if message.content_type == 'photo':
-            fileID = message.photo[-1].file_id
-            file_info = bot.get_file(fileID).wait()
+            file_id = message.photo[-1].file_id
+            file_info = bot.get_file(file_id).wait()
             downloaded_file = bot.download_file(file_info.file_path)
-            outfilepath = "data/" + user.issue.type + "_" + str(user.issue.send_time.timestamp()) + "_" + str(
+            filepath = settings.output_files_directory + user.issue.type + "_" + str(
+                user.issue.send_time.timestamp()) + "_" + str(
                 user.id) + ".jpg"
-            user.issue.image = outfilepath
-            with open(outfilepath, 'wb') as new_file:
+            user.issue.image = filepath
+            with open(filepath, 'wb') as new_file:
                 new_file.write(downloaded_file.wait())
             user.state = 'state_ask_description'
             bot.send_message(user.id, 'Отправьте адрес или геопозицию (желательно)')
@@ -89,7 +90,8 @@ def main_handler(message: telebot.types.Message):
         user.issue.description = message.text
         bot.send_message(user.id, 'Обращение успешно сохранено')
         issue = user.issue
-        filepath: str = "data/" + user.issue.type + "_" + str(user.issue.send_time.timestamp()) + "_" + str(
+        filepath: str = settings.output_files_directory + user.issue.type + "_" + str(
+            user.issue.send_time.timestamp()) + "_" + str(
             user.id) + ".yaml"
         save_issue_to_yaml(filepath, issue)
         user.state = 'init'
