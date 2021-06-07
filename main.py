@@ -47,7 +47,7 @@ def main_handler(message: telebot.types.Message):
         return
 
     if user.state == 'auth':
-        if str.lower(message.text) == 'ису':
+        if str.lower(message.text) == secret.AuthPassword:
             bot.send_message(user.id, "ok").wait()
             user.state = 'state_ask_type'
             main_handler(message)
