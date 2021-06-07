@@ -5,6 +5,8 @@ class Issue:
     type = ''
     image = ''
     description = ''
+    address = ''
+    geo = ''
     send_time = datetime.datetime.now()
 
 class User:
