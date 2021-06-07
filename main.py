@@ -1,22 +1,39 @@
 import datetime
+import logging
+import telebot
 import yaml
 import Models
 import secret
-import telebot
 import settings
 from Models import User as User
 
 bot = telebot.AsyncTeleBot(secret.Token)
 Users = []
 
+logger = None
+
+
+def logger_init():
+    log = logging.getLogger("BKG_BOT")
+    log.setLevel(logging.INFO)
+    fh = logging.FileHandler(f"{settings.log_file_directory}{str(datetime.date.today())}.log")
+    formatter = logging.Formatter('%(asctime)s- %(levelname)s - %(message)s')
+    fh.setFormatter(formatter)
+    log.addHandler(fh)
+    return log
+
+
+logger = logger_init()
+
 
 def bot_main():
+    logger.info("Program started")
     bot.polling(none_stop=True, interval=0)
 
 
 @bot.message_handler(content_types=['text', 'photo', 'location'])
 def main_handler(message: telebot.types.Message):
-    # TODO add login to log
+    logger.debug(f"Handled message from {message.from_user.id}")
 
     user = None
     u: User
@@ -51,10 +68,12 @@ def main_handler(message: telebot.types.Message):
             bot.send_message(user.id, "ok").wait()
             user.state = 'state_ask_type'
             main_handler(message)
+            logger.info(f"Success login id: {user.id}")
             return
         else:
             bot.send_message(user.id, "Пароль неверный").wait()
             user.state = "auth_require"
+            logger.info(f"Unsuccess login id: {user.id}")
             main_handler(message)
             return
 
@@ -76,12 +95,11 @@ def main_handler(message: telebot.types.Message):
 
     if user.state == 'state_ask_geo_or_address':
         if message.content_type == 'photo':
-
-            image_filepath = settings.output_files_directory + user.issue.type + "_" + str(
+            filepath = settings.output_files_directory + user.issue.type + "_" + str(
                 user.issue.send_time.timestamp()) + "_" + str(
                 user.id) + ".jpg"
-            user.issue.image = image_filepath
-            save_image(message.photo[-1].file_id, image_filepath)
+            user.issue.image = filepath
+            save_image(message.photo[-1].file_id, filepath)
             bot.send_message(user.id, 'Отправьте геопозицию (желательно) или адрес')
             user.state = 'state_ask_description'
             return
@@ -103,13 +121,13 @@ def main_handler(message: telebot.types.Message):
             main_handler(message)
 
     if user.state == 'state_create_issue':
-        # TODO add to log
         user.issue.description = message.text
-        image_filepath: str = settings.output_files_directory + user.issue.type + "_" + str(
+        filepath: str = settings.output_files_directory + user.issue.type + "_" + str(
             user.issue.send_time.timestamp()) + "_" + str(
             user.id) + ".yaml"
-        save_issue_to_yaml(image_filepath, user.issue)
+        save_issue_to_yaml(filepath, user.issue)
         bot.send_message(user.id, 'Обращение успешно сохранено')
+        logger.info(f"New issue saved to {filepath} by user: {user.id}")
         user.state = 'init'
         user.reset_issue()
 
