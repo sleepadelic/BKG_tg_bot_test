@@ -2,6 +2,8 @@ import datetime
 import logging
 import telebot
 import yaml
+from pip._internal import exceptions
+
 import Models
 import secret
 import settings
@@ -27,8 +29,13 @@ logger = logger_init()
 
 
 def bot_main():
-    logger.info("Program started")
-    bot.polling(none_stop=True, interval=0)
+    while True:
+        try:
+            bot.polling(none_stop=True, interval=0)
+        except Exception as e:
+            logger.exception("Main exception")
+        finally:
+            Users.clear()
 
 
 @bot.message_handler(content_types=['text', 'photo', 'location'])
