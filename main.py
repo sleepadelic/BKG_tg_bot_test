@@ -2,8 +2,6 @@ import datetime
 import logging
 import telebot
 import yaml
-from pip._internal import exceptions
-
 import Models
 import secret
 import settings
@@ -13,6 +11,15 @@ bot = telebot.AsyncTeleBot(secret.Token)
 Users = []
 
 logger = None
+
+MenuKeyboard = telebot.types.ReplyKeyboardMarkup(one_time_keyboard=True)
+MenuKeyboard.add('Отправить обращение', 'О проекте')
+
+IssueTypesKeyboard = telebot.types.ReplyKeyboardMarkup(one_time_keyboard=True)
+IssueTypesKeyboard.add('Тратуары', 'Пешеходные переходы', 'Освещение', 'Автомобильные  дороги', 'Ливневая канализация')
+IssueTypesKeyboard.add('Заброшеные объекты', 'Детские площадки', 'Свалки', 'Проведение капитального ремонта')
+IssueTypesKeyboard.add('Доступная среда', 'Другое')
+hideBoard = telebot.types.ReplyKeyboardRemove()
 
 
 def logger_init():
@@ -31,6 +38,7 @@ logger = logger_init()
 def bot_main():
     while True:
         try:
+            logger.info('bot started')
             bot.polling(none_stop=True, interval=0)
         except Exception as e:
             logger.exception("Main exception")
@@ -57,9 +65,28 @@ def main_handler(message: telebot.types.Message):
     if user is None:
         user = create_user(message.from_user.id)
 
+    if message.text == "/start" or message.text == "назад" or message.text == "сброс" or message.text == 'меню':
+        user.state = 'init'
+        return
+
+    if message.text == 'О проекте':
+        bot.send_message(user.id,
+                         'BKG.sibadi.org -  Сибирский автомобильно-дорожный университет – СибАДИ реализует проект'
+                         '  "Безопасный и комфортный город" при поддержке ректора Жигадло Александра Петровича'
+                         ' с целью улучшения качества жизни в Советском округе г. Омска. '
+                         'Мы хотим, чтобы каждый омич мог  принять участие в жизни своего города, выявить проблемы, '
+                         'которые влияют на безопасность и  качество жизни, '
+                         'чтобы можно было оперативно'
+                         ' их решать через взаимодействие с администрацией города Омска').wait()
+        return
+
     if user.state == 'init':
-        bot.send_message(user.id, "Бот для загрузки информации на портал bkg.sibadi.org, приветствует тебя!").wait()
-        bot.send_message(user.id, "Отправь мне 'начать' или 'отправить', чтобы загрузить фото-обращение")
+        if user.issue is None:
+            bot.send_message(user.id, "Бот для загрузки информации на портал bkg.sibadi.org, приветствует тебя!",
+                             reply_markup=MenuKeyboard).wait()
+        else:
+            bot.send_message(user.id, "Можно отправить ещё одно обращение",
+                             reply_markup=MenuKeyboard).wait()
         if settings.isAuthRequire:
             user.state = 'auth_require'
         else:
@@ -86,7 +113,7 @@ def main_handler(message: telebot.types.Message):
 
     if user.state == 'state_ask_type':
         user.issue = Models.Issue()
-        bot.send_message(user.id, "Какой тип обращения?")
+        bot.send_message(user.id, "Какой тип обращения?", reply_markup=IssueTypesKeyboard)
         user.state = 'state_ask_photo'
         return
 
@@ -105,6 +132,7 @@ def main_handler(message: telebot.types.Message):
             filepath = settings.output_files_directory + user.issue.type + "_" + str(
                 user.issue.send_time.timestamp()) + "_" + str(
                 user.id) + ".jpg"
+            filepath = filepath.replace(' ', '')
             user.issue.image = filepath
             save_image(message.photo[-1].file_id, filepath)
             bot.send_message(user.id, 'Отправьте геопозицию (желательно) или адрес')
@@ -133,9 +161,12 @@ def main_handler(message: telebot.types.Message):
             user.issue.send_time.timestamp()) + "_" + str(
             user.id) + ".yaml"
         save_issue_to_yaml(filepath, user.issue)
-        bot.send_message(user.id, 'Обращение успешно сохранено')
+        bot.send_message(user.id, 'Обращение успешно сохранено').wait()
+        bot.send_message(user.id, 'Спасибо, за то, что отправили обращение')
+        bot.send_message(user.id, 'Вместе мы сможем сделать город комфортнее и безопаснее')
         logger.info(f"New issue saved to {filepath} by user: {user.id}")
         user.state = 'init'
+        main_handler(message)
         user.reset_issue()
 
 
