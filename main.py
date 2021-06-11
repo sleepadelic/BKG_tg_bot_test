@@ -67,7 +67,6 @@ def main_handler(message: telebot.types.Message):
 
     if message.text == "/start" or message.text == "назад" or message.text == "сброс" or message.text == 'меню':
         user.state = 'init'
-        return
 
     if message.text == 'О проекте':
         bot.send_message(user.id,
@@ -81,12 +80,8 @@ def main_handler(message: telebot.types.Message):
         return
 
     if user.state == 'init':
-        if user.issue is None:
-            bot.send_message(user.id, "Бот для загрузки информации на портал bkg.sibadi.org, приветствует тебя!",
-                             reply_markup=MenuKeyboard).wait()
-        else:
-            bot.send_message(user.id, "Можно отправить ещё одно обращение",
-                             reply_markup=MenuKeyboard).wait()
+        bot.send_message(user.id, "Бот для загрузки информации на портал bkg.sibadi.org, приветствует тебя!",
+                         reply_markup=MenuKeyboard).wait()
         if settings.isAuthRequire:
             user.state = 'auth_require'
         else:
