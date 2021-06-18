@@ -10,8 +10,17 @@ from dadata import Dadata
 
 
 def excel_export_main():
-    # load_addresses()
-    # img_relative_path()
+    issues = []
+    # TODO: ignore combined_export.yaml
+    folder_path = "../data/"
+    issues = issue_combiner.open_and_load_to_array(folder_path)
+    issue_combiner.save_to_yml(issues, "../data/combined_export.yaml")
+    print("combined")
+    load_addresses()
+    print("Addresses loaded")
+    img_relative_path()
+    print("Img paths fixed")
+
 
     wb = Workbook()
     ws = wb.active
@@ -38,7 +47,7 @@ def excel_export_main():
 
         img = openpyxl.drawing.image.Image('../' + iss.image)
         img.anchor = f'G{str(row_position)}'
-        img.width = img.width/3
+        img.width = img.width / 3
         img.height = img.height / 3
         ws.add_image(img)
         ws.row_dimensions[row_position].height = 240
@@ -46,7 +55,7 @@ def excel_export_main():
         row_position += 1
     wb.save(filename=f'../data/export{str(datetime.datetime.now().date())}.xlsx')
 
-    print("saved")
+    print("Report saved")
 
 
 def img_relative_path():
@@ -61,10 +70,15 @@ def load_addresses():
     issues = issue_combiner.load_from_yaml("../data/combined_export.yaml")
     iss: Models.Issue
     for iss in issues:
-        geo = iss.geo.split(',')
-        iss.address = reverse_geocode(geo[0], geo[1])[0]['unrestricted_value']
-    issue_combiner.save_to_yml(issues, "../data/export_w_addr.yaml")
+        try:
+            if (iss.geo != None):
 
+                geo = iss.geo.split(',')
+                iss.address = reverse_geocode(geo[0], geo[1])[0]['unrestricted_value']
+        except Exception as exc:
+            print(f"No address in {iss.geo} {exc}")
+
+    issue_combiner.save_to_yml(issues, "../data/export_w_addr.yaml")
 
 def reverse_geocode(lat, lon):
     """

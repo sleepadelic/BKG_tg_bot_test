@@ -11,14 +11,13 @@ def combiner_main():
     issues = open_and_load_to_array(folder_path)
     save_to_yml(issues, "../data/combined_export.yaml")
     print_issues_with_address()
-    print("saved")
 
 
 def open_and_load_to_array(folder_path):
     arr = []
     for file in os.listdir(folder_path):
         if file.endswith(".yaml"):
-            arr.append(folder_path+file)
+            arr.append(load_from_yaml(folder_path+file))
     return arr
 
 def load_from_yaml(filepath):
