@@ -27,7 +27,7 @@ hideBoard = telebot.types.ReplyKeyboardRemove()
 def logger_init():
     log = logging.getLogger("BKG_BOT")
     log.setLevel(logging.INFO)
-    fh = logging.FileHandler(f"{settings.log_file_directory}{str(datetime.date.today())}.log")
+    fh = logging.FileHandler(f"{settings.log_file_directory}{str(datetime.date.today())}.log") #Путь файла лога
     formatter = logging.Formatter('%(asctime)s- %(levelname)s - %(message)s')
     fh.setFormatter(formatter)
     log.addHandler(fh)
@@ -126,11 +126,13 @@ def main_handler(message: telebot.types.Message):
 
     if user.state == 'state_ask_geo_or_address':
         if message.content_type == 'photo':
+            #Формирование пути файла -картинки
             filepath = settings.output_files_directory + user.issue.type + "_" + str(
                 user.issue.send_time.timestamp()) + "_" + str(
                 user.id) + ".jpg"
             filepath = filepath.replace(' ', '')
             user.issue.image = filepath
+            #Сохраняем картинку на диск
             save_image(message.photo[-1].file_id, filepath)
             bot.send_message(user.id, 'Отправьте геопозицию (желательно) или адрес')
             user.state = 'state_ask_description'
@@ -142,6 +144,7 @@ def main_handler(message: telebot.types.Message):
     if user.state == 'state_ask_description':
         if message.text != '' or message.content_type == 'location':
             if message.content_type == 'location':
+                # Преобразование в удобный формат для работы с картами
                 user.issue.geo = str(message.location.latitude) + ',' + str(message.location.longitude)
             else:
                 user.issue.address = message.text
@@ -151,6 +154,7 @@ def main_handler(message: telebot.types.Message):
         else:
             user.state = 'state_ask_geo_or_address'
             main_handler(message)
+
 
     if user.state == 'state_create_issue':
         user.issue.description = message.text
@@ -166,7 +170,7 @@ def main_handler(message: telebot.types.Message):
         main_handler(message)
         user.reset_issue()
 
-
+# Сохранения изображения на диск
 def save_image(file_id, image_filepath):
     file_info = bot.get_file(file_id).wait()
     downloaded_file = bot.download_file(file_info.file_path)
