@@ -12,9 +12,11 @@ Users = []
 
 logger = None
 
+#Клавиатура главного меню
 MenuKeyboard = telebot.types.ReplyKeyboardMarkup(one_time_keyboard=True)
 MenuKeyboard.add('Отправить обращение', 'О проекте')
 
+#Клавиатура выбора типа обращения
 IssueTypesKeyboard = telebot.types.ReplyKeyboardMarkup(one_time_keyboard=True)
 IssueTypesKeyboard.add('Тратуары', 'Пешеходные переходы', 'Освещение', 'Автомобильные  дороги', 'Ливневая канализация')
 IssueTypesKeyboard.add('Заброшеные объекты', 'Детские площадки', 'Свалки', 'Проведение капитального ремонта')
