@@ -10,28 +10,26 @@ from dadata import Dadata
 
 
 def excel_export_main():
-    issues = []
-    # TODO: ignore combined_export.yaml
-    folder_path = "../data/"
-    issues = issue_combiner.open_and_load_to_array(folder_path)
-    issue_combiner.save_to_yml(issues, "../data/combined_export.yaml")
+
+    combine_reports()
     print("combined")
     load_addresses()
     print("Addresses loaded")
     img_relative_path()
     print("Img paths fixed")
+    export_to_xlsx()
+    print("Report saved")
 
 
+def export_to_xlsx(filename=f'../data/export{str(datetime.datetime.now().date())}.xlsx'):
+    """
+    Создаёт отчёт из подготовленного yaml файла
+    :param filename: Путь для сохранения отчёта
+    """
     wb = Workbook()
     ws = wb.active
-
-    ws['A1'] = "№"
-    ws['B1'] = "Дата"
-    ws['C1'] = "Тип обращения"
-    ws['D1'] = "Адрес"
-    ws['E1'] = "Описание"
-    ws['F1'] = "Геопозиция"
-    ws['G1'] = "Фото"
+    Create_headlines(ws)
+    #change column size for image
     ws.column_dimensions['G'].width = 450
     issues = issue_combiner.load_from_yaml("../data/export_w_addr.yaml")
     row_position = 2
@@ -41,7 +39,6 @@ def excel_export_main():
         ws[f'B{str(row_position)}'] = str(iss.send_time.date())
         ws[f'C{str(row_position)}'] = iss.type
         ws[f'D{str(row_position)}'] = iss.address
-
         ws[f'E{str(row_position)}'] = iss.description
         ws[f'F{str(row_position)}'] = iss.geo
 
@@ -53,12 +50,34 @@ def excel_export_main():
         ws.row_dimensions[row_position].height = 240
 
         row_position += 1
-    wb.save(filename=f'../data/export{str(datetime.datetime.now().date())}.xlsx')
+    wb.save(filename=filename)
 
-    print("Report saved")
+
+def Create_headlines(ws):
+    ws['A1'] = "№"
+    ws['B1'] = "Дата"
+    ws['C1'] = "Тип обращения"
+    ws['D1'] = "Адрес"
+    ws['E1'] = "Описание"
+    ws['F1'] = "Геопозиция"
+    ws['G1'] = "Фото"
+
+
+def combine_reports():
+    """
+    Объединяет отчёты в один файл
+    """
+    issues = []
+    # TODO: ignore combined_export.yaml
+    folder_path = "../data/"
+    issues = issue_combiner.open_and_load_to_array(folder_path)
+    issue_combiner.save_to_yml(issues, "../data/combined_export.yaml")
 
 
 def img_relative_path():
+    """
+    Делает путь к изображениям относительным
+    """
     issues = issue_combiner.load_from_yaml("../data/export_w_addr.yaml")
     iss: Models.Issue
     for iss in issues:
@@ -67,6 +86,10 @@ def img_relative_path():
 
 
 def load_addresses():
+    """
+    Загружает адреса по гео-координатам
+    :return:
+    """
     issues = issue_combiner.load_from_yaml("../data/combined_export.yaml")
     iss: Models.Issue
     for iss in issues:
@@ -82,6 +105,7 @@ def load_addresses():
 
 def reverse_geocode(lat, lon):
     """
+    Преобразует координаты в адрес
     :rtype: str address
     """
     with Dadata(secret.dadata_token, secret.dadata_secret) as dadata:
