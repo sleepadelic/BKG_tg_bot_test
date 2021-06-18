@@ -155,6 +155,7 @@ def main_handler(message: telebot.types.Message):
             user.state = 'state_ask_geo_or_address'
             main_handler(message)
 
+
     if user.state == 'state_create_issue':
         user.issue.description = message.text
         filepath: str = settings.output_files_directory + user.issue.type + "_" + str(
@@ -169,7 +170,7 @@ def main_handler(message: telebot.types.Message):
         main_handler(message)
         user.reset_issue()
 
-
+# Сохранения изображения на диск
 def save_image(file_id, image_filepath):
     file_info = bot.get_file(file_id).wait()
     downloaded_file = bot.download_file(file_info.file_path)
