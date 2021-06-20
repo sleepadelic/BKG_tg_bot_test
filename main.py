@@ -5,6 +5,7 @@ import yaml
 import Models
 import secret
 import settings
+from ListTypesInputConstraint import TypeInputConstraint
 from Models import User as User
 
 bot = telebot.AsyncTeleBot(secret.Token)
@@ -23,9 +24,7 @@ IssueTypesKeyboard.add('Заброшеные объекты', 'Детские п
 IssueTypesKeyboard.add('Доступная среда', 'Другое')
 hideBoard = telebot.types.ReplyKeyboardRemove()
 
-TypeInputConstraint1 = ['Тратуары', 'Пешеходные переходы', 'Освещение', 'Автомобильные  дороги', 'Ливневая канализация']
-TypeInputConstraint2 = ['Заброшеные объекты', 'Детские площадки', 'Свалки', 'Проведение капитального ремонта']
-TypeInputConstraint3 = ['Доступная среда', 'Другое']
+
 
 def logger_init():
     log = logging.getLogger("BKG_BOT")
@@ -118,12 +117,7 @@ def main_handler(message: telebot.types.Message):
         return
 
     if user.state == 'state_ask_photo':
-        if message.text in TypeInputConstraint1 or message.text in TypeInputConstraint2:
-            user.issue.type = message.text
-            bot.send_message(user.id, 'Отправьте фото')
-            user.state = 'state_ask_geo_or_address'
-            return
-        elif message.text in TypeInputConstraint3:
+        if message.text in TypeInputConstraint:
             user.issue.type = message.text
             bot.send_message(user.id, 'Отправьте фото')
             user.state = 'state_ask_geo_or_address'
@@ -132,7 +126,7 @@ def main_handler(message: telebot.types.Message):
             user.state = 'state_ask_type'
             main_handler(message)
 
-    if user.state == 'state_dumb_user_1':
+    if user.state == 'state_user_was_wrong_1':
         bot.send_message(user.id, 'Отправьте фото')
         user.state = 'state_ask_geo_or_address'
         return
@@ -147,31 +141,35 @@ def main_handler(message: telebot.types.Message):
             user.issue.image = filepath
             #Сохраняем картинку на диск
             save_image(message.photo[-1].file_id, filepath)
-            bot.send_message(user.id, 'Отправьте геопозицию (желательно) или адрес')
+            bot.send_message(user.id, 'Отправьте геопозицию и следом адрес (желательно), или только адрес')
             user.state = 'state_ask_description'
             return
         else:
-            user.state = 'state_dumb_user_1'
+            user.state = 'state_user_was_wrong_1'
             main_handler(message)
 
-    if user.state == 'state_dumb_user_2':
-        bot.send_message(user.id, 'Отправьте геопозицию (желательно) или адрес')
+    if user.state == 'state_user_was_wrong_2':
+        bot.send_message(user.id, 'Отправьте геопозицию и следом адрес (желательно), или только адрес')
         user.state = 'state_ask_description'
         return
 
     if user.state == 'state_ask_description':
-        if message.text != '' or message.content_type == 'location':
-            if message.content_type == 'location':
-                # Преобразование в удобный формат для работы с картами
-                user.issue.geo = str(message.location.latitude) + ',' + str(message.location.longitude)
-            elif message.content_type != 'photo':
-                user.issue.address = message.text
-            bot.send_message(user.id, 'Отправьте описание')
+        if message.content_type == 'location':
+            # Преобразование в удобный формат для работы с картами
+            user.issue.geo = str(message.location.latitude) + ',' + str(message.location.longitude)
+        elif message.text != '' and message.content_type != 'photo':
+            user.issue.address = message.text
+            bot.send_message(user.id, 'Напишите описание')
             user.state = 'state_create_issue'
             return
         else:
-            user.state = 'state_dumb_user_2'
+            user.state = 'state_user_was_wrong_2'
             main_handler(message)
+
+    if user.state == 'state_user_was_wrong_3':
+        bot.send_message(user.id, 'Напишите описание')
+        user.state = 'state_create_issue'
+        return
 
     if user.state == 'state_create_issue':
         if message.content_type != 'photo':
@@ -187,6 +185,9 @@ def main_handler(message: telebot.types.Message):
             user.state = 'init'
             main_handler(message)
             user.reset_issue()
+        else:
+            user.state = 'state_user_was_wrong_3'
+            main_handler(message)
 
 # Сохранения изображения на диск
 def save_image(file_id, image_filepath):
