@@ -19,9 +19,12 @@ MenuKeyboard.add('Отправить обращение', 'О проекте')
 
 # Клавиатура выбора типа обращения
 IssueTypesKeyboard = telebot.types.ReplyKeyboardMarkup(one_time_keyboard=True)
-IssueTypesKeyboard.add('Тратуары', 'Пешеходные переходы', 'Освещение', 'Автомобильные  дороги', 'Ливневая канализация')
-IssueTypesKeyboard.add('Заброшеные объекты', 'Детские площадки', 'Свалки', 'Проведение капитального ремонта')
-IssueTypesKeyboard.add('Доступная среда', 'Другое')
+IssueTypesKeyboard.add(IssueTypes[0], IssueTypes[1])
+IssueTypesKeyboard.add(IssueTypes[2], IssueTypes[3])
+IssueTypesKeyboard.add(IssueTypes[4], IssueTypes[5])
+IssueTypesKeyboard.add(IssueTypes[6], IssueTypes[7])
+IssueTypesKeyboard.add(IssueTypes[8])
+IssueTypesKeyboard.add(IssueTypes[9], IssueTypes[10])
 hideBoard = telebot.types.ReplyKeyboardRemove()
 
 
@@ -73,13 +76,13 @@ def main_handler(message: telebot.types.Message):
 
     if message.text == 'О проекте':
         bot.send_message(user.id,
-                         'BKG.sibadi.org -  Сибирский автомобильно-дорожный университет – СибАДИ реализует проект'
-                         '  "Безопасный и комфортный город" при поддержке ректора Жигадло Александра Петровича'
-                         ' с целью улучшения качества жизни в Советском округе г. Омска. '
-                         'Мы хотим, чтобы каждый омич мог  принять участие в жизни своего города, выявить проблемы, '
-                         'которые влияют на безопасность и  качество жизни, '
-                         'чтобы можно было оперативно'
-                         ' их решать через взаимодействие с администрацией города Омска').wait()
+                         'BKG.sibadi.org - Сибирский автомобильно-дорожный университет – СибАДИ реализует проект '
+                         '"Безопасный и комфортный город" при поддержке ректора Жигадло Александра Петровича '
+                         'с целью улучшения качества жизни в Советском округе г. Омска. '
+                         'Мы хотим, чтобы каждый омич мог принять участие в жизни своего города, выявить проблемы, '
+                         'которые влияют на безопасность и качество жизни, '
+                         'чтобы можно было оперативно '
+                         'их решать через взаимодействие с администрацией города Омска').wait()
         return
 
     if user.state == 'init':
@@ -91,7 +94,7 @@ def main_handler(message: telebot.types.Message):
             user.state = 'state_ask_type'
         return
     if user.state == "auth_require":
-        bot.send_message(user.id, "Бот находится в стадии тестирования отправьте пароль: ").wait()
+        bot.send_message(user.id, "Бот находится в стадии тестирования. Отправьте пароль: ").wait()
         user.state = "auth"
         return
 
@@ -168,7 +171,7 @@ def main_handler(message: telebot.types.Message):
                 user.id) + ".yaml"
             save_issue_to_yaml(filepath, user.issue)
             bot.send_message(user.id, 'Обращение успешно сохранено').wait()
-            bot.send_message(user.id, 'Спасибо, за то, что отправили обращение')
+            bot.send_message(user.id, 'Спасибо за то, что отправили обращение')
             bot.send_message(user.id, 'Вместе мы сможем сделать город комфортнее и безопаснее')
             logger.info(f"New issue saved to {filepath} by user: {user.id}")
             user.state = 'init'
