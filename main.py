@@ -144,7 +144,7 @@ def main_handler(message: telebot.types.Message):
         else:
             bot.send_message(user.id, 'Отправьте фото')
             user.state = 'state_ask_geo_or_address'
-            main_handler(message)
+            return
 
     if user.state == 'state_ask_description':
         if message.content_type == 'location':
@@ -161,7 +161,7 @@ def main_handler(message: telebot.types.Message):
         else:
             bot.send_message(user.id, 'Отправьте геопозицию (желательно) или адрес')
             user.state = 'state_ask_description'
-            main_handler(message)
+            return
 
     if user.state == 'state_create_issue':
         if message.content_type != 'photo':
@@ -180,8 +180,7 @@ def main_handler(message: telebot.types.Message):
         else:
             bot.send_message(user.id, 'Напишите описание')
             user.state = 'state_create_issue'
-            main_handler(message)
-
+            return
 
 # Сохранения изображения на диск
 def save_image(file_id, image_filepath):
