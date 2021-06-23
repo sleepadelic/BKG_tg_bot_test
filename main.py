@@ -2,6 +2,7 @@ import datetime
 import logging
 import telebot
 import yaml
+
 import Models
 import secret
 import settings
@@ -26,6 +27,7 @@ IssueTypesKeyboard.add(IssueTypes[6], IssueTypes[7])
 IssueTypesKeyboard.add(IssueTypes[8])
 IssueTypesKeyboard.add(IssueTypes[9], IssueTypes[10])
 hideBoard = telebot.types.ReplyKeyboardRemove()
+
 
 
 def logger_init():
@@ -56,6 +58,7 @@ def bot_main():
 def main_handler(message: telebot.types.Message):
     logger.debug(f"Handled message from {message.from_user.id}")
 
+
     user = None
     u: User
     user: User
@@ -74,6 +77,26 @@ def main_handler(message: telebot.types.Message):
     if message.text == "/start" or message.text == "назад" or message.text == "сброс" or message.text == 'меню':
         user.state = 'init'
 
+#need help - /help (доработать сообщение).
+    if message.text == '/help' or message.text == "помощь":
+        bot.send_message(user.id,
+                         'Как работает наш бот?\n'
+                         'Первое, что Вас встретит это приветственное письмо и выбор "Отправить обращение" и "О проекте"\n'
+                         '"О проекте" - бот высветит всю информацию о нашем проекте "Безопасный и комфортный город".\n'
+                         '"Отправить обращние" -  при выборе данного слота в меню, Вы начнете прохождение анкетирования, но сначала вас спросят пароль\n'    
+                         'После правильного ввода пароля начнется анкетирование. Структура анкеты состоит из таких вопросов :\n'
+                         '"Какой тип обращения?" - у вас высветится клавиатура с выбором типа обращения. Нужно именно выбрать.\n'
+                         '"Отправьте фото" - в данном пункте вы отправляет фотографию и только её.\n'
+                         '"Отправьте геопозицию (желательно) или адрес" - при помощи скрепки вы можете отправить геопозицию о проблемном месте.\n '
+                         'Если вы по какой-то причине не можете отправить её, то напишите адрес.\n'
+                         '"Напишите описание" - просто опишите проблему.\n'
+                         'После прохождения анкеты Вы получите сообщение о том, что обращение было сохранено и отравлено на портал.\n'
+                         'Так же Вы сможете отправить повторно обращение, если вы нашли другие проблемы.\n'
+                         'Список команд, которыми бот обладает:\n'
+                         '"/help" - помощь \n'
+                         '"/start", "сброс", "назад", "меню" - возвращение в начало; \n').wait()
+        return
+#
     if message.text == 'О проекте':
         bot.send_message(user.id,
                          'BKG.sibadi.org - Сибирский автомобильно-дорожный университет – СибАДИ реализует проект '
