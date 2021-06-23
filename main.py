@@ -2,7 +2,6 @@ import datetime
 import logging
 import telebot
 import yaml
-
 import Models
 import secret
 import settings
@@ -27,7 +26,6 @@ IssueTypesKeyboard.add(IssueTypes[6], IssueTypes[7])
 IssueTypesKeyboard.add(IssueTypes[8])
 IssueTypesKeyboard.add(IssueTypes[9], IssueTypes[10])
 hideBoard = telebot.types.ReplyKeyboardRemove()
-
 
 
 def logger_init():
@@ -58,7 +56,6 @@ def bot_main():
 def main_handler(message: telebot.types.Message):
     logger.debug(f"Handled message from {message.from_user.id}")
 
-
     user = None
     u: User
     user: User
@@ -77,13 +74,12 @@ def main_handler(message: telebot.types.Message):
     if message.text == "/start" or message.text == "назад" or message.text == "сброс" or message.text == 'меню':
         user.state = 'init'
 
-#need help - /help (доработать сообщение).
     if message.text == '/help' or message.text == "помощь":
         bot.send_message(user.id,
                          'Как работает наш бот?\n'
                          'Первое, что Вас встретит это приветственное письмо и выбор "Отправить обращение" и "О проекте"\n'
                          '"О проекте" - бот высветит всю информацию о нашем проекте "Безопасный и комфортный город".\n'
-                         '"Отправить обращние" -  при выборе данного слота в меню, Вы начнете прохождение анкетирования, но сначала вас спросят пароль\n'    
+                         '"Отправить обращние" -  при выборе данного слота в меню, Вы начнете прохождение анкетирования, но сначала вас спросят пароль\n'
                          'После правильного ввода пароля начнется анкетирование. Структура анкеты состоит из таких вопросов :\n'
                          '"Какой тип обращения?" - у вас высветится клавиатура с выбором типа обращения. Нужно именно выбрать.\n'
                          '"Отправьте фото" - в данном пункте вы отправляет фотографию и только её.\n'
@@ -96,7 +92,7 @@ def main_handler(message: telebot.types.Message):
                          '"/help" - помощь \n'
                          '"/start", "сброс", "назад", "меню" - возвращение в начало; \n').wait()
         return
-#
+
     if message.text == 'О проекте':
         bot.send_message(user.id,
                          'BKG.sibadi.org - Сибирский автомобильно-дорожный университет – СибАДИ реализует проект '
@@ -109,7 +105,8 @@ def main_handler(message: telebot.types.Message):
         return
 
     if user.state == 'init':
-        bot.send_message(user.id, "Бот для загрузки информации на портал bkg.sibadi.org, приветствует тебя!",
+        bot.send_message(user.id,
+                         "Бот для загрузки информации на портал bkg.sibadi.org, приветствует тебя!\n Если Вам нужна помощь, по работе бота, введите команду /help",
                          reply_markup=MenuKeyboard).wait()
         if settings.isAuthRequire:
             user.state = 'auth_require'
@@ -204,6 +201,7 @@ def main_handler(message: telebot.types.Message):
             bot.send_message(user.id, 'Напишите описание')
             user.state = 'state_create_issue'
             return
+
 
 # Сохранения изображения на диск
 def save_image(file_id, image_filepath):
