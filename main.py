@@ -269,7 +269,7 @@ def main_handler(message: telebot.types.Message):
             bot.send_message(user.id, 'Напишите описание')
             user.state = 'state_create_issue'
             return
-        elif message.text != '' and message.content_type != 'photo' and message.content_type != 'location':
+        elif message.text != '' and message.content_type == 'text':
             user.issue.address = message.text
             bot.send_message(user.id, 'Напишите описание')
             user.state = 'state_create_issue'
@@ -280,7 +280,7 @@ def main_handler(message: telebot.types.Message):
             return
 
     if user.state == 'state_create_issue':
-        if message.content_type != 'photo':
+        if message.content_type == 'text':
             user.issue.description = message.text
             filepath: str = settings.output_files_directory + user.issue.type + "_" + str(
                 user.issue.send_time.timestamp()) + "_" + str(
