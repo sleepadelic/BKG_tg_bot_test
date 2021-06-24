@@ -108,8 +108,8 @@ def main_handler(message: telebot.types.Message):
             bot.send_message(user.id, "Отчет был отправлен.", reply_markup=ServiceTypesKeyboard)
             return
         if message.text == 'Выгрузка отчета с условиями':
+            bot.send_message(user.id, "Выберите тип отчета.", reply_markup=ReportTypesKeyboard)
             user.state = "conditions_report"
-
         if message.text == 'В начало':
             bot.send_message(user.id,
                              "Бот для загрузки информации на портал bkg.sibadi.org, приветствует тебя!\n"
@@ -119,10 +119,6 @@ def main_handler(message: telebot.types.Message):
             return
 
     if user.state == "conditions_report":
-        bot.send_message(user.id, "Выберите тип отчета.", reply_markup=ReportTypesKeyboard)
-        user.state = "conditions_report_next"
-
-    if user.state == "conditions_report_next":
         if message.text == 'По дате':
             user.state = "type_by_date"
 
@@ -143,16 +139,17 @@ def main_handler(message: telebot.types.Message):
             bot.send_message(user.id, "Вы открыли сервисное меню. Выберите пункт из меню.",
                              reply_markup=ServiceTypesKeyboard)
             user.state = 'ServiceMenu'
+            return
 
     if user.state == "type_by_date":
         bot.send_message(user.id, "Сообщение об отправке отчета по дате.", reply_markup=ReportTypesKeyboard)
-        user.state = "conditions_report_next"
+        user.state = "conditions_report"
     if user.state == "type_by_type":
         bot.send_message(user.id, "Сообщение об отправке отчета по типу.", reply_markup=ReportTypesKeyboard)
-        user.state = "conditions_report_next"
+        user.state = "conditions_report"
     if user.state == "type_by_date_and_type":
         bot.send_message(user.id, "Сообщение об отправке отчета по дате и типу.", reply_markup=ReportTypesKeyboard)
-        user.state = "conditions_report_next"
+        user.state = "conditions_report"
 
 
     if message.text == '/help' or message.text == "помощь":
