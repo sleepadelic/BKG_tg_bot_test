@@ -9,6 +9,7 @@ from ListTypesInputConstraint import IssueTypes
 from ListTypesInputConstraint import ServiceTypes
 from ListTypesInputConstraint import ReportTypes
 from Models import User as User
+from Service import issue_excel_export
 
 bot = telebot.AsyncTeleBot(secret.Token)
 Users = []
@@ -42,6 +43,7 @@ ReportTypesKeyboard.add(ReportTypes[0], ReportTypes[1])
 ReportTypesKeyboard.add(ReportTypes[2], ReportTypes[3])
 ReportTypesKeyboard.add(ReportTypes[4])
 hideReportBoard = telebot.types.ReplyKeyboardRemove()
+
 
 def logger_init():
     log = logging.getLogger("BKG_BOT")
@@ -90,19 +92,44 @@ def main_handler(message: telebot.types.Message):
         user.state = 'init'
 
     if message.text == "/service":
-        bot.send_message(user.id, "Вы открыли сервисное меню. Выберите пункт из меню.",
-                         reply_markup=ServiceTypesKeyboard)
-        user.state = 'ServiceMenu'
+        if user.id in secret.admins_ids:
+            bot.send_message(user.id, "Вы открыли сервисное меню. Выберите пункт из меню.",
+                             reply_markup=ServiceTypesKeyboard)
+            user.state = 'ServiceMenu'
+            return
+        else:
+            bot.send_message(user.id, "У вас нет доступа для использования данной команды").wait()
+            return
 
     if user.state == 'ServiceMenu':
         if message.text == 'Активные пользователи':
-            bot.send_message(user.id, "Список активных пользователей был отправлен.", reply_markup=ServiceTypesKeyboard)
+            user_count = 0
+            usr: User
+            for usr in Users:
+                if usr.state != 'init' and (time_now - usr.last_action_time < datetime.timedelta(minutes=5)):
+                    user_count += 1
+            bot.send_message(user.id, f"Сейчас у бота {user_count} активных пользователей (включая вас).",
+                             reply_markup=ServiceTypesKeyboard)
             return
         if message.text == 'Кол-во обращений за день':
-            bot.send_message(user.id, "Кол-во обращений за день было отправлено", reply_markup=ServiceTypesKeyboard)
+            today_issues = []
+            # combined_issues = issue_excel_export.combine_reports()
+            # today_issues = issue_excel_export.select_issues_by_date(time_now.date(), combined_issues)
+            yesterday_issues = []
+            # yesterday_issues = issue_excel_export.select_issues_by_date((time_now.date() -
+            # timedelta(days=1)).date(), combined_issues)
+            bot.send_message(user.id, f"Сегодня было отправлено {len(today_issues)}, "
+                                      f"вчера {len(yesterday_issues)} обращений", reply_markup=ServiceTypesKeyboard)
             return
         if message.text == 'Сообщение об остановке бота':
-            bot.send_message(user.id, "Сообщение об остановке бота отправлено.", reply_markup=ServiceTypesKeyboard)
+            for usr in Users:
+                if usr.state != 'init' and (time_now - usr.last_action_time < datetime.timedelta(minutes=5)):
+                    bot.send_message(usr.id, "Через 5 минут бот будет остановлен, для обслуживания."
+                                             "Необходимо завершить заполнение обращения, иначе данные будут потеряны "
+                                             "и потребуется повторное заполнение",
+                                     reply_markup=ServiceTypesKeyboard)
+            bot.send_message(user.id, "Сообщения об остановк бота через 5 минут отправлены.",
+                             reply_markup=ServiceTypesKeyboard)
             return
         if message.text == 'Выгрузка отчета за сегодня':
             bot.send_message(user.id, "Отчет был отправлен.", reply_markup=ServiceTypesKeyboard)
@@ -150,7 +177,6 @@ def main_handler(message: telebot.types.Message):
     if user.state == "type_by_date_and_type":
         bot.send_message(user.id, "Сообщение об отправке отчета по дате и типу.", reply_markup=ReportTypesKeyboard)
         user.state = "conditions_report"
-
 
     if message.text == '/help' or message.text == "помощь":
         bot.send_message(user.id,
@@ -243,7 +269,7 @@ def main_handler(message: telebot.types.Message):
             bot.send_message(user.id, 'Напишите описание')
             user.state = 'state_create_issue'
             return
-        elif message.text != '' and message.content_type != 'photo' and message.content_type != 'location':
+        elif message.text != '' and message.content_type == 'text':
             user.issue.address = message.text
             bot.send_message(user.id, 'Напишите описание')
             user.state = 'state_create_issue'
@@ -254,7 +280,7 @@ def main_handler(message: telebot.types.Message):
             return
 
     if user.state == 'state_create_issue':
-        if message.content_type != 'photo':
+        if message.content_type == 'text':
             user.issue.description = message.text
             filepath: str = settings.output_files_directory + user.issue.type + "_" + str(
                 user.issue.send_time.timestamp()) + "_" + str(
