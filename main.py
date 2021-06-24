@@ -6,6 +6,8 @@ import Models
 import secret
 import settings
 from ListTypesInputConstraint import IssueTypes
+from ListTypesInputConstraint import ServiceTypes
+from ListTypesInputConstraint import ReportTypes
 from Models import User as User
 
 bot = telebot.AsyncTeleBot(secret.Token)
@@ -27,6 +29,19 @@ IssueTypesKeyboard.add(IssueTypes[8])
 IssueTypesKeyboard.add(IssueTypes[9], IssueTypes[10])
 hideBoard = telebot.types.ReplyKeyboardRemove()
 
+# Клавиатура сервисного меню
+ServiceTypesKeyboard = telebot.types.ReplyKeyboardMarkup(one_time_keyboard=True)
+ServiceTypesKeyboard.add(ServiceTypes[0], ServiceTypes[1])
+ServiceTypesKeyboard.add(ServiceTypes[2], ServiceTypes[3])
+ServiceTypesKeyboard.add(ServiceTypes[4], ServiceTypes[5])
+hideServiceBoard = telebot.types.ReplyKeyboardRemove()
+
+# Клавиатура отчета по условиям
+ReportTypesKeyboard = telebot.types.ReplyKeyboardMarkup(one_time_keyboard=True)
+ReportTypesKeyboard.add(ReportTypes[0], ReportTypes[1])
+ReportTypesKeyboard.add(ReportTypes[2], ReportTypes[3])
+ReportTypesKeyboard.add(ReportTypes[4])
+hideReportBoard = telebot.types.ReplyKeyboardRemove()
 
 def logger_init():
     log = logging.getLogger("BKG_BOT")
@@ -73,6 +88,72 @@ def main_handler(message: telebot.types.Message):
 
     if message.text == "/start" or message.text == "назад" or message.text == "сброс" or message.text == 'меню':
         user.state = 'init'
+
+    if message.text == "/service":
+        bot.send_message(user.id, "Вы открыли сервисное меню. Выберите пункт из меню.",
+                         reply_markup=ServiceTypesKeyboard)
+        user.state = 'ServiceMenu'
+
+    if user.state == 'ServiceMenu':
+        if message.text == 'Активные пользователи':
+            bot.send_message(user.id, "Список активных пользователей был отправлен.", reply_markup=ServiceTypesKeyboard)
+            return
+        if message.text == 'Кол-во обращений за день':
+            bot.send_message(user.id, "Кол-во обращений за день было отправлено", reply_markup=ServiceTypesKeyboard)
+            return
+        if message.text == 'Сообщение об остановке бота':
+            bot.send_message(user.id, "Сообщение об остановке бота отправлено.", reply_markup=ServiceTypesKeyboard)
+            return
+        if message.text == 'Выгрузка отчета за сегодня':
+            bot.send_message(user.id, "Отчет был отправлен.", reply_markup=ServiceTypesKeyboard)
+            return
+        if message.text == 'Выгрузка отчета с условиями':
+            user.state = "conditions_report"
+
+        if message.text == 'В начало':
+            bot.send_message(user.id,
+                             "Бот для загрузки информации на портал bkg.sibadi.org, приветствует тебя!\n"
+                             "Если Вам нужна помощь, по работе бота, введите команду /help",
+                             reply_markup=MenuKeyboard).wait()
+            user.state = "auth_require"
+            return
+
+    if user.state == "conditions_report":
+        bot.send_message(user.id, "Выберите тип отчета.", reply_markup=ReportTypesKeyboard)
+        user.state = "conditions_report_next"
+
+    if user.state == "conditions_report_next":
+        if message.text == 'По дате':
+            user.state = "type_by_date"
+
+        if message.text == 'По типу':
+            user.state = "type_by_type"
+
+        if message.text == 'По дате и типу':
+            user.state = "type_by_date_and_type"
+
+        if message.text == 'В начало':
+            bot.send_message(user.id,
+                             "Бот для загрузки информации на портал bkg.sibadi.org, приветствует тебя!\n"
+                             "Если Вам нужна помощь, по работе бота, введите команду /help",
+                             reply_markup=MenuKeyboard).wait()
+            user.state = "auth_require"
+            return
+        if message.text == 'Назад':
+            bot.send_message(user.id, "Вы открыли сервисное меню. Выберите пункт из меню.",
+                             reply_markup=ServiceTypesKeyboard)
+            user.state = 'ServiceMenu'
+
+    if user.state == "type_by_date":
+        bot.send_message(user.id, "Сообщение об отправке отчета по дате.", reply_markup=ReportTypesKeyboard)
+        user.state = "conditions_report_next"
+    if user.state == "type_by_type":
+        bot.send_message(user.id, "Сообщение об отправке отчета по типу.", reply_markup=ReportTypesKeyboard)
+        user.state = "conditions_report_next"
+    if user.state == "type_by_date_and_type":
+        bot.send_message(user.id, "Сообщение об отправке отчета по дате и типу.", reply_markup=ReportTypesKeyboard)
+        user.state = "conditions_report_next"
+
 
     if message.text == '/help' or message.text == "помощь":
         bot.send_message(user.id,
