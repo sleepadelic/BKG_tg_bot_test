@@ -113,7 +113,13 @@ def main_handler(message: telebot.types.Message):
             bot.send_message(user.id, "Кол-во обращений за день было отправлено", reply_markup=ServiceTypesKeyboard)
             return
         if message.text == 'Сообщение об остановке бота':
-            bot.send_message(user.id, "Сообщение об остановке бота отправлено.", reply_markup=ServiceTypesKeyboard)
+            for usr in Users:
+                if usr.state != 'init' and (time_now - usr.last_action_time < datetime.timedelta(minutes=5)):
+                    bot.send_message(usr.id, "Через 5 минут бот будет остановлен, для обслуживания."
+                                             "Необходимо завершить заполнение обращения, иначе данные будут потеряны "
+                                             "и потребуется повторное заполнение",
+                                     reply_markup=ServiceTypesKeyboard)
+            bot.send_message(user.id, "Сообщения об остановк бота через 5 минут отправлены.", reply_markup=ServiceTypesKeyboard)
             return
         if message.text == 'Выгрузка отчета за сегодня':
             bot.send_message(user.id, "Отчет был отправлен.", reply_markup=ServiceTypesKeyboard)
