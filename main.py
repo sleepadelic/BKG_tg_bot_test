@@ -101,7 +101,13 @@ def main_handler(message: telebot.types.Message):
 
     if user.state == 'ServiceMenu':
         if message.text == 'Активные пользователи':
-            bot.send_message(user.id, "Список активных пользователей был отправлен.", reply_markup=ServiceTypesKeyboard)
+            user_count = 0
+            usr: User
+            for usr in Users:
+                if usr.state != 'init' and (time_now - usr.last_action_time < datetime.timedelta(minutes=5)):
+                    user_count += 1
+            bot.send_message(user.id, f"Сейчас у бота {user_count} активных пользователей (включая вас).",
+                             reply_markup=ServiceTypesKeyboard)
             return
         if message.text == 'Кол-во обращений за день':
             bot.send_message(user.id, "Кол-во обращений за день было отправлено", reply_markup=ServiceTypesKeyboard)
