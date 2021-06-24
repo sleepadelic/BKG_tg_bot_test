@@ -2,7 +2,7 @@ import datetime
 import openpyxl
 from PIL import Image
 
-import issue_combiner
+from Service import issue_combiner
 import Models
 import secret
 from openpyxl import Workbook

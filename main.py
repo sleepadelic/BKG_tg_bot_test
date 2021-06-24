@@ -96,6 +96,7 @@ def main_handler(message: telebot.types.Message):
             bot.send_message(user.id, "Вы открыли сервисное меню. Выберите пункт из меню.",
                              reply_markup=ServiceTypesKeyboard)
             user.state = 'ServiceMenu'
+            return
         else:
             bot.send_message(user.id, "У вас нет доступа для использования данной команды").wait()
             return
@@ -117,8 +118,8 @@ def main_handler(message: telebot.types.Message):
             yesterday_issues = []
             # yesterday_issues = issue_excel_export.select_issues_by_date((time_now.date() -
             # timedelta(days=1)).date(), combined_issues)
-            bot.send_message(user.id, f"Сегодня было отправлено {today_issues.count()}, "
-                                      f"вчера {yesterday_issues.count()} обращений", reply_markup=ServiceTypesKeyboard)
+            bot.send_message(user.id, f"Сегодня было отправлено {len(today_issues)}, "
+                                      f"вчера {len(yesterday_issues)} обращений", reply_markup=ServiceTypesKeyboard)
             return
         if message.text == 'Сообщение об остановке бота':
             for usr in Users:
