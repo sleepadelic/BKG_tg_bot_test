@@ -113,9 +113,9 @@ def main_handler(message: telebot.types.Message):
         if message.text == 'Кол-во обращений за день':
             today_issues = []
             # combined_issues = issue_excel_export.combine_reports()
-            # today_issues = issue_excel_export.select_issues_by_date(datetime.datetime.now().date(), combined_issues)
+            # today_issues = issue_excel_export.select_issues_by_date(time_now.date(), combined_issues)
             yesterday_issues = []
-            # yesterday_issues = issue_excel_export.select_issues_by_date((datetime.datetime.now().date() -
+            # yesterday_issues = issue_excel_export.select_issues_by_date((time_now.date() -
             # timedelta(days=1)).date(), combined_issues)
             bot.send_message(user.id, f"Сегодня было отправлено {today_issues.count()}, "
                                       f"вчера {yesterday_issues.count()} обращений", reply_markup=ServiceTypesKeyboard)
