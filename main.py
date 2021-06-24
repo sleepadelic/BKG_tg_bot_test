@@ -74,6 +74,16 @@ def main_handler(message: telebot.types.Message):
     if message.text == "/start" or message.text == "назад" or message.text == "сброс" or message.text == 'меню':
         user.state = 'init'
 
+    if message.text == '/help' or message.text == "помощь":
+        bot.send_message(user.id,
+                         'Бот состоит из анкеты, которая включает такие пункты:\n'
+                         '"Какой тип обращения?"\n'
+                         '"Отправьте фото"\n'
+                         '"Отправьте геопозицию (желательно) или адрес"\n'
+                         '"Напишите описание"\n'
+                         'После прохождения, обращение будет сохранено и отправлено на портал.\n').wait()
+        return
+
     if message.text == 'О проекте':
         bot.send_message(user.id,
                          'BKG.sibadi.org - Сибирский автомобильно-дорожный университет – СибАДИ реализует проект '
@@ -86,7 +96,9 @@ def main_handler(message: telebot.types.Message):
         return
 
     if user.state == 'init':
-        bot.send_message(user.id, "Бот для загрузки информации на портал bkg.sibadi.org, приветствует тебя!",
+        bot.send_message(user.id,
+                         "Бот для загрузки информации на портал bkg.sibadi.org, приветствует тебя!\n"
+                         "Если Вам нужна помощь, по работе бота, введите команду /help",
                          reply_markup=MenuKeyboard).wait()
         if settings.isAuthRequire:
             user.state = 'auth_require'
@@ -181,6 +193,7 @@ def main_handler(message: telebot.types.Message):
             bot.send_message(user.id, 'Напишите описание')
             user.state = 'state_create_issue'
             return
+
 
 # Сохранения изображения на диск
 def save_image(file_id, image_filepath):
