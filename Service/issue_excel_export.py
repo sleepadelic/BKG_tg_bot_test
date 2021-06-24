@@ -10,19 +10,21 @@ from dadata import Dadata
 
 
 def excel_export_main():
-    combine_reports()
+    issues = combine_reports()
     print("combined")
-    # select_issues_by_date()
-    # print("sorted")
-    load_addresses()
+    issues = select_issues_by_date(datetime.datetime.now().date(), issues)
+    print("sorted")
+    issues = load_addresses(issues)
     print("Addresses loaded")
-    img_relative_path()
+    issues = img_relative_path(issues)
     print("Img paths fixed")
+    saved_yaml_file(issues)
+    print("Saved .yaml")
     export_to_xlsx()
     print("Report saved")
 
 
-def export_to_xlsx(filename=f'../data/export{str(datetime.datetime.now().date())}.xlsx'):
+def export_to_xlsx(filename=f'../Issues/export{str(datetime.datetime.now().date())}.xlsx'):
     """
     Создаёт отчёт из подготовленного yaml файла
     :param filename: Путь для сохранения отчёта
@@ -30,9 +32,9 @@ def export_to_xlsx(filename=f'../data/export{str(datetime.datetime.now().date())
     wb = Workbook()
     ws = wb.active
     Create_headlines(ws)
-    #change column size for image
+    # change column size for image
     ws.column_dimensions['G'].width = 450
-    issues = issue_combiner.load_from_yaml("../data/export_w_addr.yaml")
+    issues = issue_combiner.load_from_yaml("../Issues/combined_export.yaml")
     row_position = 2
     iss: Models.Issue
     for iss in issues:
@@ -63,28 +65,25 @@ def Create_headlines(ws):
     ws['F1'] = "Геопозиция"
     ws['G1'] = "Фото"
 
-def combine_reports():
+
+def combine_reports(folder_path="../data/"):
     """
     Объединяет отчёты в один файл
     """
-    issues = []
-    # TODO: ignore combined_export.yaml
-    folder_path = "../data/"
     issues = issue_combiner.open_and_load_to_array(folder_path)
-    issue_combiner.save_to_yml(issues, "../data/combined_export.yaml")
+    return issues
 
 
-def select_issues_by_date(date: str, issues):
+def select_issues_by_date(date, issues):
     """
     :param date: дата в формате год-месяц-день
     :param issues: список issues
     :return: выбранные issues по дате
     """
-    date_time_obj = datetime.datetime.strptime(date, '%Y-%m-%d')
     selected_issues = []
     iss: Models.Issue
     for iss in issues:
-        if date_time_obj.date() == iss.send_time.date():
+        if date == iss.send_time.date():
             selected_issues.append(iss)
 
     return selected_issues
@@ -118,35 +117,38 @@ def select_issues_by_type_and_date(date: str, type: str, issues):
     return selected_issues
 
 
+def saved_yaml_file(issues):
+    issue_combiner.save_to_yml(issues, "../Issues/combined_export.yaml")
 
 
-def img_relative_path():
+def img_relative_path(issues):
     """
     Делает путь к изображениям относительным
     """
-    issues = issue_combiner.load_from_yaml("../data/export_w_addr.yaml")
+    img_relative_path_issues = issues
     iss: Models.Issue
-    for iss in issues:
+    for iss in img_relative_path_issues:
         iss.image = iss.image.replace('/home/danil0111/bkg_bot/', '')
-    issue_combiner.save_to_yml(issues, "../data/export_w_addr.yaml")
+    return img_relative_path_issues
 
 
-def load_addresses():
+def load_addresses(issues):
     """
     Загружает адреса по гео-координатам
     :return:
     """
-    issues = issue_combiner.load_from_yaml("../data/combined_export.yaml")
+
+    load_address_issues = issues
     iss: Models.Issue
-    for iss in issues:
+    for iss in load_address_issues:
         try:
             if (iss.geo != None):
                 geo = iss.geo.split(',')
                 iss.address = reverse_geocode(geo[0], geo[1])[0]['unrestricted_value']
         except Exception as exc:
             print(f"No address in {iss.geo} {exc}")
+    return load_address_issues
 
-    issue_combiner.save_to_yml(issues, "../data/export_w_addr.yaml")
 
 def reverse_geocode(lat, lon):
     """
