@@ -9,6 +9,7 @@ from ListTypesInputConstraint import IssueTypes
 from ListTypesInputConstraint import ServiceTypes
 from ListTypesInputConstraint import ReportTypes
 from Models import User as User
+from Service import issue_excel_export
 
 bot = telebot.AsyncTeleBot(secret.Token)
 Users = []
@@ -110,7 +111,14 @@ def main_handler(message: telebot.types.Message):
                              reply_markup=ServiceTypesKeyboard)
             return
         if message.text == 'Кол-во обращений за день':
-            bot.send_message(user.id, "Кол-во обращений за день было отправлено", reply_markup=ServiceTypesKeyboard)
+            today_issues = []
+            # combined_issues = issue_excel_export.combine_reports()
+            # today_issues = issue_excel_export.select_issues_by_date(datetime.datetime.now().date(), combined_issues)
+            yesterday_issues = []
+            # yesterday_issues = issue_excel_export.select_issues_by_date((datetime.datetime.now().date() -
+            # timedelta(days=1)).date(), combined_issues)
+            bot.send_message(user.id, f"Сегодня было отправлено {today_issues.count()}, "
+                                      f"вчера {yesterday_issues.count()} обращений", reply_markup=ServiceTypesKeyboard)
             return
         if message.text == 'Сообщение об остановке бота':
             for usr in Users:
@@ -119,7 +127,8 @@ def main_handler(message: telebot.types.Message):
                                              "Необходимо завершить заполнение обращения, иначе данные будут потеряны "
                                              "и потребуется повторное заполнение",
                                      reply_markup=ServiceTypesKeyboard)
-            bot.send_message(user.id, "Сообщения об остановк бота через 5 минут отправлены.", reply_markup=ServiceTypesKeyboard)
+            bot.send_message(user.id, "Сообщения об остановк бота через 5 минут отправлены.",
+                             reply_markup=ServiceTypesKeyboard)
             return
         if message.text == 'Выгрузка отчета за сегодня':
             bot.send_message(user.id, "Отчет был отправлен.", reply_markup=ServiceTypesKeyboard)
