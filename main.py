@@ -43,6 +43,7 @@ ReportTypesKeyboard.add(ReportTypes[2], ReportTypes[3])
 ReportTypesKeyboard.add(ReportTypes[4])
 hideReportBoard = telebot.types.ReplyKeyboardRemove()
 
+
 def logger_init():
     log = logging.getLogger("BKG_BOT")
     log.setLevel(logging.INFO)
@@ -90,9 +91,13 @@ def main_handler(message: telebot.types.Message):
         user.state = 'init'
 
     if message.text == "/service":
-        bot.send_message(user.id, "Вы открыли сервисное меню. Выберите пункт из меню.",
-                         reply_markup=ServiceTypesKeyboard)
-        user.state = 'ServiceMenu'
+        if user.id in secret.admins_ids:
+            bot.send_message(user.id, "Вы открыли сервисное меню. Выберите пункт из меню.",
+                             reply_markup=ServiceTypesKeyboard)
+            user.state = 'ServiceMenu'
+        else:
+            bot.send_message(user.id, "У вас нет доступа для использования данной команды").wait()
+            return
 
     if user.state == 'ServiceMenu':
         if message.text == 'Активные пользователи':
@@ -150,7 +155,6 @@ def main_handler(message: telebot.types.Message):
     if user.state == "type_by_date_and_type":
         bot.send_message(user.id, "Сообщение об отправке отчета по дате и типу.", reply_markup=ReportTypesKeyboard)
         user.state = "conditions_report"
-
 
     if message.text == '/help' or message.text == "помощь":
         bot.send_message(user.id,
