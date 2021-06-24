@@ -10,9 +10,10 @@ from dadata import Dadata
 
 
 def excel_export_main():
-
     combine_reports()
     print("combined")
+    # select_issues_by_date()
+    # print("sorted")
     load_addresses()
     print("Addresses loaded")
     img_relative_path()
@@ -62,7 +63,6 @@ def Create_headlines(ws):
     ws['F1'] = "Геопозиция"
     ws['G1'] = "Фото"
 
-
 def combine_reports():
     """
     Объединяет отчёты в один файл
@@ -74,6 +74,21 @@ def combine_reports():
     issue_combiner.save_to_yml(issues, "../data/combined_export.yaml")
 
 
+def select_issues_by_date(date: str, issues):
+    """
+    :param date: дата в формате год-месяц-день
+    :param issues: список issues
+    :return: выбранные issues по дате
+    """
+    date_time_obj = datetime.datetime.strptime(date, '%Y-%m-%d')
+    sorted_issues = []
+    iss: Models.Issue
+    for iss in issues:
+        if date_time_obj.date() == iss.send_time.date():
+            sorted_issues.append(iss)
+
+    return sorted_issues
+
 def img_relative_path():
     """
     Делает путь к изображениям относительным
@@ -81,7 +96,7 @@ def img_relative_path():
     issues = issue_combiner.load_from_yaml("../data/export_w_addr.yaml")
     iss: Models.Issue
     for iss in issues:
-        iss.image = iss.image.removeprefix('/home/danil0111/bkg_bot/')
+        iss.image = iss.image.replace('/home/danil0111/bkg_bot/', '')
     issue_combiner.save_to_yml(issues, "../data/export_w_addr.yaml")
 
 
