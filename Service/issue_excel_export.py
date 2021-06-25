@@ -35,7 +35,7 @@ def export_to_xlsx(filename=f'../{settings.report_files_directory}{str(datetime.
     Create_headlines(ws)
     # change column size for image
     ws.column_dimensions['G'].width = 450
-    issues = issue_combiner.load_from_yaml("../issues/combined_export.yaml")
+    issues = issue_combiner.load_from_yaml(f"../{settings.report_files_directory}combined_export.yaml")
     row_position = 2
     iss: Models.Issue
     for iss in issues:
@@ -119,7 +119,7 @@ def select_issues_by_type_and_date(date: str, type: str, issues):
 
 
 def saved_yaml_file(issues):
-    issue_combiner.save_to_yml(issues, "../issues/combined_export.yaml")
+    issue_combiner.save_to_yml(issues, f"../{settings.report_files_directory}combined_export.yaml")
 
 
 def img_relative_path(issues):
