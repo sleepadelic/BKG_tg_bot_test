@@ -1,10 +1,14 @@
 import datetime
 import logging
 import telebot
+import os
 import yaml
+import pathlib
+from pathlib import Path
 import Models
 import secret
 import settings
+from datetime import timedelta
 from ListTypesInputConstraint import IssueTypes
 from ListTypesInputConstraint import ServiceTypes
 from ListTypesInputConstraint import ReportTypes
@@ -59,14 +63,19 @@ logger = logger_init()
 
 
 def bot_main():
-    while True:
-        try:
-            logger.info('bot started')
-            bot.polling(none_stop=True, interval=0)
-        except Exception as e:
-            logger.exception("Main exception")
-        finally:
-            Users.clear()
+    if settings.debug_mode != True:
+        while True:
+            try:
+                logger.info('bot started')
+                bot.polling(none_stop=True, interval=0)
+            except Exception as e:
+                logger.exception("Main exception")
+            finally:
+                Users.clear()
+    else:
+        logger.info('Бот запущен в режиме отладки')
+        bot.polling(none_stop=True, interval=0)
+
 
 
 @bot.message_handler(content_types=['text', 'photo', 'location'])
@@ -115,11 +124,11 @@ def main_handler(message: telebot.types.Message):
             return
         if message.text == 'Кол-во обращений за день':
             today_issues = []
-            # combined_issues = issue_excel_export.combine_reports()
-            # today_issues = issue_excel_export.select_issues_by_date(time_now.date(), combined_issues)
+            combined_issues = issue_excel_export.combine_reports(f'{settings.output_files_directory}')
+            today_issues = issue_excel_export.select_issues_by_date(time_now.date(), combined_issues)
             yesterday_issues = []
-            # yesterday_issues = issue_excel_export.select_issues_by_date((time_now.date() -
-            # timedelta(days=1)).date(), combined_issues)
+            yesterday_issues = issue_excel_export.select_issues_by_date((time_now.date() -
+                                                                         timedelta(days=1)), combined_issues)
             bot.send_message(user.id, f"Сегодня было отправлено {len(today_issues)}, "
                                       f"вчера {len(yesterday_issues)} обращений", reply_markup=ServiceTypesKeyboard)
             return
@@ -134,7 +143,26 @@ def main_handler(message: telebot.types.Message):
                              reply_markup=ServiceTypesKeyboard)
             return
         if message.text == 'Выгрузка отчета за сегодня':
+            filepath = settings.report_files_directory + str(datetime.datetime.now().date()) + str(
+                time_now.timestamp()) + "_" + str(
+                user.id)
+            combined_issues = issue_excel_export.combine_reports(f'{settings.output_files_directory}')
+            combined_issues = issue_excel_export.select_issues_by_date(time_now.date(), combined_issues)
+            combined_issues = issue_excel_export.load_addresses(combined_issues)
+            combined_issues = issue_excel_export.img_relative_path(combined_issues)
+            issue_excel_export.saved_yaml_file(combined_issues, filepath + '.yaml')
+            issue_excel_export.export_to_xlsx(combined_issues, filepath + '.xlsx', '')
+            issue_excel_export.saved_zip_file(combined_issues, filepath)
+
+            bot.send_document(message.chat.id, open(filepath + '.xlsx', 'rb')).wait()
+            bot.send_document(message.chat.id, open(filepath + '.yaml', 'rb')).wait()
+            bot.send_document(message.chat.id, open(filepath + '.zip', 'rb')).wait()
+
             bot.send_message(user.id, "Отчет был отправлен.", reply_markup=ServiceTypesKeyboard)
+            os.remove(Path(pathlib.Path.cwd(), filepath + '.xlsx'))
+            os.remove(Path(pathlib.Path.cwd(), filepath + '.yaml'))
+            os.remove(Path(pathlib.Path.cwd(), filepath + '.zip'))
+            logger.info(f"Был выгружен отчет за {time_now.date()} пользователю: {user.id}")
             return
         if message.text == 'Выгрузка отчета с условиями':
             bot.send_message(user.id, "Выберите тип отчета.", reply_markup=ReportTypesKeyboard)
