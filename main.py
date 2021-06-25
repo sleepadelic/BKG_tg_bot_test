@@ -169,11 +169,12 @@ def main_handler(message: telebot.types.Message):
             u_info = message.from_user
             bot.send_message(user.id, "Вы открыли опасную зону :)", reply_markup=DANGERTypesKeyboard)
             user.state = 'danger'
-            logger.info(f"User {u_info.username} success login into service panel")
+            logger.info(f"User {u_info.username} success login into DANGER ZONE")
             return
         else:
             bot.send_message(user.id, "У вас нет доступа для использования данной команды").wait()
             return
+
 # Компоненты опасной зоны
     if user.state == 'danger':
         if message.text == "Перезапуск бота":
@@ -220,6 +221,7 @@ def main_handler(message: telebot.types.Message):
 
     if user.state == 'discharge':
         bot.send_message(user.id, 'Логи выгружены', reply_markup=DANGERTypesKeyboard)
+        logger.info(f"User {user.id} success uploading logs into DANGER ZONE")
         user.state = 'danger'
 
     if user.state == 'version':
@@ -230,6 +232,7 @@ def main_handler(message: telebot.types.Message):
     if user.state == 'yes_restart':
         if message.text == 'Да':
             bot.send_message(user.id, 'Тут должен быть кот рестарта', reply_markup=DANGERTypesKeyboard)
+            logger.info(f"User {user.id} success restarting the bot into DANGER ZONE")
             user.state = 'danger'
             return
         if message.text == 'Нет':
@@ -240,6 +243,7 @@ def main_handler(message: telebot.types.Message):
     if user.state == 'yes_updating_stop':
         if message.text == 'Да':
             bot.send_message(user.id, 'Тут должен быть кот обновы с остановкой', reply_markup=DANGERTypesKeyboard)
+            logger.info(f"User {user.id} success updating the bot with stopping the service into DANGER ZONE")
             user.state = 'danger'
             return
         if message.text == 'Нет':
@@ -250,6 +254,7 @@ def main_handler(message: telebot.types.Message):
     if user.state == 'yes_updating_restart':
         if message.text == 'Да':
             bot.send_message(user.id, 'Тут должен быть кот обновы с перезагрузкой', reply_markup=DANGERTypesKeyboard)
+            logger.info(f"User {user.id} success updating the bot with a reboot into DANGER ZONE")
             user.state = 'danger'
             return
         if message.text == 'Нет':
@@ -283,12 +288,17 @@ def main_handler(message: telebot.types.Message):
 
     if user.state == "type_by_date":
         bot.send_message(user.id, "Сообщение об отправке отчета по дате.", reply_markup=ReportTypesKeyboard)
+        logger.info(f"User {user.id} success sending a report by date into service panel")
         user.state = "conditions_report"
+
     if user.state == "type_by_type":
         bot.send_message(user.id, "Сообщение об отправке отчета по типу.", reply_markup=ReportTypesKeyboard)
+        logger.info(f"User {user.id} success sending a report by type into service panel")
         user.state = "conditions_report"
+
     if user.state == "type_by_date_and_type":
         bot.send_message(user.id, "Сообщение об отправке отчета по дате и типу.", reply_markup=ReportTypesKeyboard)
+        logger.info(f"User {user.id} success sending a report by date and type into service panel")
         user.state = "conditions_report"
 
     if message.text == '/help' or message.text == "помощь":
