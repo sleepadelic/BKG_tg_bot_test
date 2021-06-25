@@ -1,0 +1,15 @@
+[Unit]
+Description=BKG bot service
+Wants=network.targetDescription=bkgbot
+After=network.target
+
+[Service]
+
+WorkingDirectory=/home/danil0111/BKG_tg_bot_test
+
+OOMScoreAdjust=-100
+ExecStart=/home/danil0111/BKG_tg_bot_test/venv/bin/python3 -u /home/danil0111/BKG_tg_bot_test/main.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
