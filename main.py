@@ -5,6 +5,7 @@ import yaml
 import Models
 import secret
 import settings
+from datetime import timedelta
 from ListTypesInputConstraint import IssueTypes
 from ListTypesInputConstraint import ServiceTypes
 from ListTypesInputConstraint import ReportTypes
@@ -113,11 +114,11 @@ def main_handler(message: telebot.types.Message):
             return
         if message.text == 'Кол-во обращений за день':
             today_issues = []
-            # combined_issues = issue_excel_export.combine_reports()
-            # today_issues = issue_excel_export.select_issues_by_date(time_now.date(), combined_issues)
+            combined_issues = issue_excel_export.combine_reports(f'{settings.output_files_directory}')
+            today_issues = issue_excel_export.select_issues_by_date(time_now.date(), combined_issues)
             yesterday_issues = []
-            # yesterday_issues = issue_excel_export.select_issues_by_date((time_now.date() -
-            # timedelta(days=1)).date(), combined_issues)
+            yesterday_issues = issue_excel_export.select_issues_by_date((time_now.date() -
+            timedelta(days=1)), combined_issues)
             bot.send_message(user.id, f"Сегодня было отправлено {len(today_issues)}, "
                                       f"вчера {len(yesterday_issues)} обращений", reply_markup=ServiceTypesKeyboard)
             return
