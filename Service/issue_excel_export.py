@@ -1,8 +1,7 @@
 import datetime
 import openpyxl
 import settings
-from PIL import Image
-
+import zipfile
 from Service import issue_combiner
 import Models
 import secret
@@ -19,16 +18,17 @@ def excel_export_main():
     print("Addresses loaded")
     issues = img_relative_path(issues)
     print("Img paths fixed")
-    saved_yaml_file(issues)
+    saved_yaml_file(issues, f"../{settings.report_files_directory}combined_export.yaml")
     print("Saved .yaml")
-    export_to_xlsx(issues)
+    export_to_xlsx(issues, f'../{settings.report_files_directory}{str(datetime.datetime.now().date())}.xlsx', '../')
     print("Report saved")
 
 
-def export_to_xlsx(issues, filename=f'../{settings.report_files_directory}{str(datetime.datetime.now().date())}.xlsx'):
+def export_to_xlsx(issues, filename, route):
     """
     Создаёт отчёт из подготовленного yaml файла
     :param filename: Путь для сохранения отчёта
+    :param route: ../ возврат в предыдущую папку
     """
     wb = Workbook()
     ws = wb.active
@@ -45,7 +45,7 @@ def export_to_xlsx(issues, filename=f'../{settings.report_files_directory}{str(d
         ws[f'E{str(row_position)}'] = iss.description
         ws[f'F{str(row_position)}'] = iss.geo
 
-        img = openpyxl.drawing.image.Image('../' + iss.image)
+        img = openpyxl.drawing.image.Image(route + iss.image)
         img.anchor = f'G{str(row_position)}'
         img.width = img.width / 3
         img.height = img.height / 3
@@ -117,8 +117,16 @@ def select_issues_by_type_and_date(date: str, type: str, issues):
     return selected_issues
 
 
-def saved_yaml_file(issues):
-    issue_combiner.save_to_yml(issues, f"../{settings.report_files_directory}combined_export.yaml")
+def saved_yaml_file(issues, filename):
+    issue_combiner.save_to_yml(issues, filename)
+
+
+def saved_zip_file(issues, filename):
+    new_arch = zipfile.ZipFile(filename + '.zip', mode="w")
+    iss: Models.Issue
+    for iss in issues:
+        new_arch.write(iss.image)
+    new_arch.close()
 
 
 def img_relative_path(issues):

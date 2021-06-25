@@ -3,3 +3,4 @@ log_file_directory = 'logs/'  # logging directory
 isSessionCheckEnabled = False  # session timeout check
 isAuthRequire = True  # test versions auth
 report_files_directory = 'issues/'
+debug_mode = False
