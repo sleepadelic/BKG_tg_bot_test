@@ -12,6 +12,7 @@ from datetime import timedelta
 from ListTypesInputConstraint import IssueTypes
 from ListTypesInputConstraint import ServiceTypes
 from ListTypesInputConstraint import ReportTypes
+from ListTypesInputConstraint import DANGERTypes
 from Models import User as User
 from Service import issue_excel_export
 
@@ -39,6 +40,7 @@ ServiceTypesKeyboard = telebot.types.ReplyKeyboardMarkup(one_time_keyboard=True)
 ServiceTypesKeyboard.add(ServiceTypes[0], ServiceTypes[1])
 ServiceTypesKeyboard.add(ServiceTypes[2], ServiceTypes[3])
 ServiceTypesKeyboard.add(ServiceTypes[4], ServiceTypes[5])
+ServiceTypesKeyboard.add(ServiceTypes[6])
 hideServiceBoard = telebot.types.ReplyKeyboardRemove()
 
 # Клавиатура отчета по условиям
@@ -48,6 +50,13 @@ ReportTypesKeyboard.add(ReportTypes[2], ReportTypes[3])
 ReportTypesKeyboard.add(ReportTypes[4])
 hideReportBoard = telebot.types.ReplyKeyboardRemove()
 
+# Клавиатура опасной зоны
+DANGERTypesKeyboard = telebot.types.ReplyKeyboardMarkup(one_time_keyboard=True)
+DANGERTypesKeyboard.add(DANGERTypes[0], DANGERTypes[1])
+DANGERTypesKeyboard.add(DANGERTypes[2], DANGERTypes[3])
+DANGERTypesKeyboard.add(DANGERTypes[4], DANGERTypes[5])
+DANGERTypesKeyboard.add(DANGERTypes[6], DANGERTypes[7])
+hideDANGERBoard = telebot.types.ReplyKeyboardRemove()
 
 def logger_init():
     log = logging.getLogger("BKG_BOT")
@@ -99,6 +108,8 @@ def main_handler(message: telebot.types.Message):
 
     if message.text == "/start" or message.text == "назад" or message.text == "сброс" or message.text == 'меню':
         user.state = 'init'
+
+# Начало сервисного меню
     if message.text == "/service":
         if user.id in secret.admins_ids:
             u_info: telebot.types.User
@@ -112,6 +123,7 @@ def main_handler(message: telebot.types.Message):
             bot.send_message(user.id, "У вас нет доступа для использования данной команды").wait()
             return
 
+# Компоненты сервисного меню
     if user.state == 'ServiceMenu':
         if message.text == 'Активные пользователи':
             user_count = 0
@@ -167,6 +179,10 @@ def main_handler(message: telebot.types.Message):
         if message.text == 'Выгрузка отчета с условиями':
             bot.send_message(user.id, "Выберите тип отчета.", reply_markup=ReportTypesKeyboard)
             user.state = "conditions_report"
+
+        if message.text == 'Опасная зона':
+            user.state = 'proverka'
+
         if message.text == 'В начало':
             bot.send_message(user.id,
                              "Бот для загрузки информации на портал bkg.sibadi.org, приветствует тебя!\n"
@@ -174,7 +190,107 @@ def main_handler(message: telebot.types.Message):
                              reply_markup=MenuKeyboard).wait()
             user.state = "auth_require"
             return
+# Проверка id для входа в зону
+    if user.state == 'proverka':
+        if user.id in secret.admins_DANGER_ZONE_ids:
+            u_info: telebot.types.User
+            u_info = message.from_user
+            bot.send_message(user.id, "Вы открыли опасную зону :)", reply_markup=DANGERTypesKeyboard)
+            user.state = 'danger'
+            logger.info(f"User {u_info.username} success login into DANGER ZONE")
+            return
+        else:
+            bot.send_message(user.id, "У вас нет доступа для использования данной команды").wait()
+            return
 
+# Компоненты опасной зоны
+    if user.state == 'danger':
+        if message.text == "Перезапуск бота":
+            bot.send_message(user.id, 'Вы точно этого хотите? Да или Нет?')
+            user.state = 'yes_restart'
+            return
+
+        if message.text == "Обновление бота с остановкой службы":
+            bot.send_message(user.id, 'Вы точно этого хотите? Да или Нет?')
+            user.state = 'yes_updating_stop'
+            return
+
+        if message.text == "Обновление бота с перезагрузкой":
+            bot.send_message(user.id, 'Вы точно этого хотите? Да или Нет?')
+            user.state = 'yes_updating_restart'
+            return
+
+        if message.text == "Ссылка на админ-панель":
+            user.state = 'links'
+
+        if message.text == "Выгрузка логов":
+            user.state = 'discharge'
+
+        if message.text == "Версия бота":
+            user.state = 'version'
+
+        if message.text == "Назад":
+            bot.send_message(user.id, "Вы открыли сервисное меню. Выберите пункт из меню.",
+                             reply_markup=ServiceTypesKeyboard)
+            user.state = 'ServiceMenu'
+            return
+
+        if message.text == "В начало":
+            bot.send_message(user.id,
+                             "Бот для загрузки информации на портал bkg.sibadi.org, приветствует тебя!\n"
+                             "Если Вам нужна помощь, по работе бота, введите команду /help",
+                             reply_markup=MenuKeyboard).wait()
+            user.state = "auth_require"
+            return
+# Компоненты меню по типу опасной зоны
+    if user.state == 'links':
+        bot.send_message(user.id, 'Получена ссылка на админ-панель сервера бота', reply_markup=DANGERTypesKeyboard)
+        user.state = 'danger'
+
+    if user.state == 'discharge':
+        bot.send_message(user.id, 'Логи выгружены', reply_markup=DANGERTypesKeyboard)
+        logger.info(f"User {user.id} success uploading logs into DANGER ZONE")
+        user.state = 'danger'
+
+    if user.state == 'version':
+        bot.send_message(user.id, 'Версися бота - ...', reply_markup=DANGERTypesKeyboard)
+        user.state = 'danger'
+
+# Отгрузки перезагрузки
+    if user.state == 'yes_restart':
+        if message.text == 'Да':
+            bot.send_message(user.id, 'Тут должен быть кот рестарта', reply_markup=DANGERTypesKeyboard)
+            logger.info(f"User {user.id} success restarting the bot into DANGER ZONE")
+            user.state = 'danger'
+            return
+        if message.text == 'Нет':
+            bot.send_message(user.id, 'Вы вернулись обратно. Выберите пункт', reply_markup=DANGERTypesKeyboard)
+            user.state = 'danger'
+            return
+
+    if user.state == 'yes_updating_stop':
+        if message.text == 'Да':
+            bot.send_message(user.id, 'Тут должен быть кот обновы с остановкой', reply_markup=DANGERTypesKeyboard)
+            logger.info(f"User {user.id} success updating the bot with stopping the service into DANGER ZONE")
+            user.state = 'danger'
+            return
+        if message.text == 'Нет':
+            bot.send_message(user.id, 'Вы вернулись обратно. Выберите пункт', reply_markup=DANGERTypesKeyboard)
+            user.state = 'danger'
+            return
+
+    if user.state == 'yes_updating_restart':
+        if message.text == 'Да':
+            bot.send_message(user.id, 'Тут должен быть кот обновы с перезагрузкой', reply_markup=DANGERTypesKeyboard)
+            logger.info(f"User {user.id} success updating the bot with a reboot into DANGER ZONE")
+            user.state = 'danger'
+            return
+        if message.text == 'Нет':
+            bot.send_message(user.id, 'Вы вернулись обратно. Выберите пункт', reply_markup=DANGERTypesKeyboard)
+            user.state = 'danger'
+            return
+
+# Компоненты меню выгрузки отчета с условиями
     if user.state == "conditions_report":
         if message.text == 'По дате':
             user.state = "type_by_date"
@@ -200,12 +316,17 @@ def main_handler(message: telebot.types.Message):
 
     if user.state == "type_by_date":
         bot.send_message(user.id, "Сообщение об отправке отчета по дате.", reply_markup=ReportTypesKeyboard)
+        logger.info(f"User {user.id} success sending a report by date into service panel")
         user.state = "conditions_report"
+
     if user.state == "type_by_type":
         bot.send_message(user.id, "Сообщение об отправке отчета по типу.", reply_markup=ReportTypesKeyboard)
+        logger.info(f"User {user.id} success sending a report by type into service panel")
         user.state = "conditions_report"
+
     if user.state == "type_by_date_and_type":
         bot.send_message(user.id, "Сообщение об отправке отчета по дате и типу.", reply_markup=ReportTypesKeyboard)
+        logger.info(f"User {user.id} success sending a report by date and type into service panel")
         user.state = "conditions_report"
 
     if message.text == '/help' or message.text == "помощь":
