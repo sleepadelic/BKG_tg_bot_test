@@ -8,10 +8,12 @@ httpcore==0.13.4
 httpx==0.18.1
 idna==2.10
 openpyxl==3.0.7
+pathlib==1.0.1
 Pillow==8.2.0
 pyTelegramBotAPI==3.7.9
 PyYAML==5.4.1
 requests==2.25.1
 rfc3986==1.5.0
 sniffio==1.2.0
+typing-extensions==3.10.0.0
 urllib3==1.26.5
