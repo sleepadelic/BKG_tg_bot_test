@@ -90,12 +90,14 @@ def main_handler(message: telebot.types.Message):
 
     if message.text == "/start" or message.text == "назад" or message.text == "сброс" or message.text == 'меню':
         user.state = 'init'
-
     if message.text == "/service":
         if user.id in secret.admins_ids:
+            u_info: telebot.types.User
+            u_info = message.from_user
             bot.send_message(user.id, "Вы открыли сервисное меню. Выберите пункт из меню.",
                              reply_markup=ServiceTypesKeyboard)
             user.state = 'ServiceMenu'
+            logger.info(f"User {u_info.username} success login into service panel")
             return
         else:
             bot.send_message(user.id, "У вас нет доступа для использования данной команды").wait()
@@ -196,7 +198,8 @@ def main_handler(message: telebot.types.Message):
                          'Мы хотим, чтобы каждый омич мог принять участие в жизни своего города, выявить проблемы, '
                          'которые влияют на безопасность и качество жизни, '
                          'чтобы можно было оперативно '
-                         'их решать через взаимодействие с администрацией города Омска', reply_markup=MenuKeyboard).wait()
+                         'их решать через взаимодействие с администрацией города Омска',
+                         reply_markup=MenuKeyboard).wait()
         return
 
     if user.state == 'init':
