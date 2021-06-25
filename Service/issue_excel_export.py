@@ -1,8 +1,9 @@
 import datetime
 import openpyxl
+import settings
 from PIL import Image
 
-import issue_combiner
+from Service import issue_combiner
 import Models
 import secret
 from openpyxl import Workbook
@@ -10,18 +11,21 @@ from dadata import Dadata
 
 
 def excel_export_main():
-
-    combine_reports()
+    issues = combine_reports()
     print("combined")
-    load_addresses()
+    issues = select_issues_by_date(datetime.datetime.now().date(), issues)
+    print("sorted")
+    issues = load_addresses(issues)
     print("Addresses loaded")
-    img_relative_path()
+    issues = img_relative_path(issues)
     print("Img paths fixed")
-    export_to_xlsx()
+    saved_yaml_file(issues)
+    print("Saved .yaml")
+    export_to_xlsx(issues)
     print("Report saved")
 
 
-def export_to_xlsx(filename=f'../data/export{str(datetime.datetime.now().date())}.xlsx'):
+def export_to_xlsx(issues, filename=f'../{settings.report_files_directory}{str(datetime.datetime.now().date())}.xlsx'):
     """
     Создаёт отчёт из подготовленного yaml файла
     :param filename: Путь для сохранения отчёта
@@ -29,9 +33,8 @@ def export_to_xlsx(filename=f'../data/export{str(datetime.datetime.now().date())
     wb = Workbook()
     ws = wb.active
     Create_headlines(ws)
-    #change column size for image
+    # change column size for image
     ws.column_dimensions['G'].width = 450
-    issues = issue_combiner.load_from_yaml("../data/export_w_addr.yaml")
     row_position = 2
     iss: Models.Issue
     for iss in issues:
@@ -63,45 +66,86 @@ def Create_headlines(ws):
     ws['G1'] = "Фото"
 
 
-def combine_reports():
+def combine_reports(folder_path="../data/"):
     """
     Объединяет отчёты в один файл
     """
-    issues = []
-    # TODO: ignore combined_export.yaml
-    folder_path = "../data/"
     issues = issue_combiner.open_and_load_to_array(folder_path)
-    issue_combiner.save_to_yml(issues, "../data/combined_export.yaml")
+    return issues
 
 
-def img_relative_path():
+def select_issues_by_date(date, issues):
+    """
+    :param date: дата в формате год-месяц-день
+    :param issues: список issues
+    :return: выбранные issues по дате
+    """
+    selected_issues = []
+    iss: Models.Issue
+    for iss in issues:
+        if date == iss.send_time.date():
+            selected_issues.append(iss)
+
+    return selected_issues
+
+
+def select_issues_by_type(type: str, issues):
+    """
+    :param type: выбор с клавиатуры, строка
+    :param issues: список issues
+    :return: выбранные issues по типу
+    """
+    selected_issues = []
+    iss: Models.Issue
+    for iss in issues:
+        if type == iss.type:
+            selected_issues.append(iss)
+
+    return selected_issues
+
+
+def select_issues_by_type_and_date(date: str, type: str, issues):
+    """
+
+    :param date: дата в формате год-месяц-день
+    :param type: выбор с клавиатуры, строка
+    :param issues: список issues
+    :return: выбранные issues по дате и типу
+    """
+    selected_issues = select_issues_by_date(date, issues)
+    selected_issues = select_issues_by_type(type, selected_issues)
+    return selected_issues
+
+
+def saved_yaml_file(issues):
+    issue_combiner.save_to_yml(issues, f"../{settings.report_files_directory}combined_export.yaml")
+
+
+def img_relative_path(issues):
     """
     Делает путь к изображениям относительным
     """
-    issues = issue_combiner.load_from_yaml("../data/export_w_addr.yaml")
     iss: Models.Issue
     for iss in issues:
-        iss.image = iss.image.removeprefix('/home/danil0111/bkg_bot/')
-    issue_combiner.save_to_yml(issues, "../data/export_w_addr.yaml")
+        iss.image = iss.image.replace('/home/danil0111/bkg_bot/', '')
+    return issues
 
 
-def load_addresses():
+def load_addresses(issues):
     """
     Загружает адреса по гео-координатам
     :return:
     """
-    issues = issue_combiner.load_from_yaml("../data/combined_export.yaml")
     iss: Models.Issue
     for iss in issues:
         try:
             if (iss.geo != None):
-
                 geo = iss.geo.split(',')
                 iss.address = reverse_geocode(geo[0], geo[1])[0]['unrestricted_value']
         except Exception as exc:
             print(f"No address in {iss.geo} {exc}")
+    return issues
 
-    issue_combiner.save_to_yml(issues, "../data/export_w_addr.yaml")
 
 def reverse_geocode(lat, lon):
     """
