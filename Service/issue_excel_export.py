@@ -21,11 +21,11 @@ def excel_export_main():
     print("Img paths fixed")
     saved_yaml_file(issues)
     print("Saved .yaml")
-    export_to_xlsx()
+    export_to_xlsx(issues)
     print("Report saved")
 
 
-def export_to_xlsx(filename=f'../{settings.report_files_directory}{str(datetime.datetime.now().date())}.xlsx'):
+def export_to_xlsx(issues, filename=f'../{settings.report_files_directory}{str(datetime.datetime.now().date())}.xlsx'):
     """
     Создаёт отчёт из подготовленного yaml файла
     :param filename: Путь для сохранения отчёта
@@ -35,7 +35,6 @@ def export_to_xlsx(filename=f'../{settings.report_files_directory}{str(datetime.
     Create_headlines(ws)
     # change column size for image
     ws.column_dimensions['G'].width = 450
-    issues = issue_combiner.load_from_yaml(f"../{settings.report_files_directory}combined_export.yaml")
     row_position = 2
     iss: Models.Issue
     for iss in issues:
