@@ -1,5 +1,6 @@
 import datetime
 import openpyxl
+import settings
 from PIL import Image
 
 from Service import issue_combiner
@@ -20,11 +21,11 @@ def excel_export_main():
     print("Img paths fixed")
     saved_yaml_file(issues)
     print("Saved .yaml")
-    export_to_xlsx()
+    export_to_xlsx(issues)
     print("Report saved")
 
 
-def export_to_xlsx(filename=f'../Issues/export{str(datetime.datetime.now().date())}.xlsx'):
+def export_to_xlsx(issues, filename=f'../{settings.report_files_directory}{str(datetime.datetime.now().date())}.xlsx'):
     """
     Создаёт отчёт из подготовленного yaml файла
     :param filename: Путь для сохранения отчёта
@@ -34,7 +35,6 @@ def export_to_xlsx(filename=f'../Issues/export{str(datetime.datetime.now().date(
     Create_headlines(ws)
     # change column size for image
     ws.column_dimensions['G'].width = 450
-    issues = issue_combiner.load_from_yaml("../Issues/combined_export.yaml")
     row_position = 2
     iss: Models.Issue
     for iss in issues:
@@ -118,18 +118,17 @@ def select_issues_by_type_and_date(date: str, type: str, issues):
 
 
 def saved_yaml_file(issues):
-    issue_combiner.save_to_yml(issues, "../Issues/combined_export.yaml")
+    issue_combiner.save_to_yml(issues, f"../{settings.report_files_directory}combined_export.yaml")
 
 
 def img_relative_path(issues):
     """
     Делает путь к изображениям относительным
     """
-    img_relative_path_issues = issues
     iss: Models.Issue
-    for iss in img_relative_path_issues:
+    for iss in issues:
         iss.image = iss.image.replace('/home/danil0111/bkg_bot/', '')
-    return img_relative_path_issues
+    return issues
 
 
 def load_addresses(issues):
@@ -137,17 +136,15 @@ def load_addresses(issues):
     Загружает адреса по гео-координатам
     :return:
     """
-
-    load_address_issues = issues
     iss: Models.Issue
-    for iss in load_address_issues:
+    for iss in issues:
         try:
             if (iss.geo != None):
                 geo = iss.geo.split(',')
                 iss.address = reverse_geocode(geo[0], geo[1])[0]['unrestricted_value']
         except Exception as exc:
             print(f"No address in {iss.geo} {exc}")
-    return load_address_issues
+    return issues
 
 
 def reverse_geocode(lat, lon):
