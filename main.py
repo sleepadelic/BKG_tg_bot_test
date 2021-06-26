@@ -20,7 +20,6 @@ Users = []
 logger = None
 
 
-
 def logger_init():
     log = logging.getLogger("BKG_BOT")
     log.setLevel(logging.INFO)
@@ -379,6 +378,7 @@ def create_and_send_report_by_date(message, time_now, user):
         bot.send_message(user.id, "Ошибка. Формат даты указан неверно, попробуйте снова")
         return
 
+
 def danger_zone_processing(message, user):
     if message.text == "Перезапуск бота":
         bot.send_message(user.id, 'Вы точно этого хотите? Да или Нет?')
@@ -465,6 +465,19 @@ def service_menu_processing(message, time_now, user):
         user.state = "conditions_report"
     if message.text == 'Опасная зона':
         enter_to_danger_zone(message, user)
+
+    if message.text == 'Выгрузка сырых файлов':
+        filepath = settings.report_files_directory + "backup" + "_" + str(datetime.datetime.now().date()) + str(
+            time_now.timestamp()) + "_" + str(
+            user.id)
+        issue_excel_export.open_and_load_zip_backup(f'{settings.output_files_directory}', filepath)
+        bot.send_document(message.chat.id, open(filepath + '.zip', 'rb')).wait()
+        bot.send_message(user.id, "Выгрузка была завершена", reply_markup=keyboards.get_service_menu_keyboard())
+        os.remove(Path(pathlib.Path.cwd(), filepath + '.zip'))
+        logger.info(
+            f"Были выгружены все файлы из {settings.output_files_directory} на момент {time_now.date()} пользователю: "
+            f"{user.id}")
+
     if message.text == 'В начало':
         bot.send_message(user.id,
                          "Бот для загрузки информации на портал bkg.sibadi.org, приветствует тебя!\n"

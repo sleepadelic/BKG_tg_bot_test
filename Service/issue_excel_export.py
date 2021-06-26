@@ -1,4 +1,5 @@
 import datetime
+import os
 import openpyxl
 import settings
 import zipfile
@@ -125,6 +126,14 @@ def saved_zip_file(issues, filename):
     iss: Models.Issue
     for iss in issues:
         new_arch.write(iss.image)
+    new_arch.close()
+
+
+def open_and_load_zip_backup(folder_path, filename):
+    new_arch = zipfile.ZipFile(filename + '.zip', mode="w")
+    for file in os.listdir(folder_path):
+        if file.endswith(".yaml") or file.endswith(".jpg"):
+            new_arch.write(folder_path+file)
     new_arch.close()
 
 
