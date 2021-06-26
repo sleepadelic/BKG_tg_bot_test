@@ -104,9 +104,8 @@ def select_issues_by_type(type: str, issues):
     return selected_issues
 
 
-def select_issues_by_type_and_date(date: str, type: str, issues):
+def select_issues_by_type_and_date(date, type: str, issues):
     """
-
     :param date: дата в формате год-месяц-день
     :param type: выбор с клавиатуры, строка
     :param issues: список issues
