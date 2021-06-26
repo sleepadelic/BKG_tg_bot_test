@@ -86,7 +86,6 @@ def bot_main():
         bot.polling(none_stop=True, interval=0)
 
 
-
 @bot.message_handler(content_types=['text', 'photo', 'location'])
 def main_handler(message: telebot.types.Message):
     logger.debug(f"Handled message from {message.from_user.id}")
@@ -109,7 +108,7 @@ def main_handler(message: telebot.types.Message):
     if message.text == "/start" or message.text == "назад" or message.text == "сброс" or message.text == 'меню':
         user.state = 'init'
 
-# Начало сервисного меню
+    # Начало сервисного меню
     if message.text == "/service":
         if user.id in secret.admins_ids:
             u_info: telebot.types.User
@@ -123,7 +122,7 @@ def main_handler(message: telebot.types.Message):
             bot.send_message(user.id, "У вас нет доступа для использования данной команды").wait()
             return
 
-# Компоненты сервисного меню
+    # Компоненты сервисного меню
     if user.state == 'ServiceMenu':
         if message.text == 'Активные пользователи':
             user_count = 0
@@ -190,7 +189,7 @@ def main_handler(message: telebot.types.Message):
                              reply_markup=MenuKeyboard).wait()
             user.state = "auth_require"
             return
-# Проверка id для входа в зону
+    # Проверка id для входа в зону
     if user.state == 'proverka':
         if user.id in secret.admins_DANGER_ZONE_ids:
             u_info: telebot.types.User
@@ -203,7 +202,7 @@ def main_handler(message: telebot.types.Message):
             bot.send_message(user.id, "У вас нет доступа для использования данной команды").wait()
             return
 
-# Компоненты опасной зоны
+    # Компоненты опасной зоны
     if user.state == 'danger':
         if message.text == "Перезапуск бота":
             bot.send_message(user.id, 'Вы точно этого хотите? Да или Нет?')
@@ -242,7 +241,7 @@ def main_handler(message: telebot.types.Message):
                              reply_markup=MenuKeyboard).wait()
             user.state = "auth_require"
             return
-# Компоненты меню по типу опасной зоны
+    # Компоненты меню по типу опасной зоны
     if user.state == 'links':
         bot.send_message(user.id, 'Получена ссылка на админ-панель сервера бота', reply_markup=DANGERTypesKeyboard)
         user.state = 'danger'
@@ -256,7 +255,7 @@ def main_handler(message: telebot.types.Message):
         bot.send_message(user.id, 'Версися бота - ...', reply_markup=DANGERTypesKeyboard)
         user.state = 'danger'
 
-# Отгрузки перезагрузки
+    # Отгрузки перезагрузки
     if user.state == 'yes_restart':
         if message.text == 'Да':
             bot.send_message(user.id, 'Тут должен быть кот рестарта', reply_markup=DANGERTypesKeyboard)
@@ -290,16 +289,19 @@ def main_handler(message: telebot.types.Message):
             user.state = 'danger'
             return
 
-# Компоненты меню выгрузки отчета с условиями
+    # Компоненты меню выгрузки отчета с условиями
     if user.state == "conditions_report":
         if message.text == 'По дате':
+            bot.send_message(user.id, 'Напишите дату (прим. 2021-06-26):').wait()
             user.state = "type_by_date"
 
         if message.text == 'По типу':
+            bot.send_message(user.id, "Выберите тип:", reply_markup=IssueTypesKeyboard).wait()
             user.state = "type_by_type"
 
         if message.text == 'По дате и типу':
-            user.state = "type_by_date_and_type"
+            bot.send_message(user.id, 'Напишите дату (прим. 2021-06-26):').wait()
+            user.state = "type_by_date_and_type1"
 
         if message.text == 'В начало':
             bot.send_message(user.id,
@@ -315,19 +317,105 @@ def main_handler(message: telebot.types.Message):
             return
 
     if user.state == "type_by_date":
-        bot.send_message(user.id, "Сообщение об отправке отчета по дате.", reply_markup=ReportTypesKeyboard)
-        logger.info(f"User {user.id} success sending a report by date into service panel")
-        user.state = "conditions_report"
+        date_time_str = message.text
+        if message.text != ReportTypes[0]:
+            bot.send_message(user.id, "Формирование отчета может занять некоторое время. Пожалуйста, подождите.")
+            date_time_obj = datetime.datetime.strptime(date_time_str, '%Y-%m-%d').date()
+            filepath = settings.report_files_directory + date_time_str + str(
+                time_now.timestamp()) + "_" + str(user.id)
+            combined_issues = issue_excel_export.combine_reports(f'{settings.output_files_directory}')
+            combined_issues = issue_excel_export.select_issues_by_date(date_time_obj, combined_issues)
+            combined_issues = issue_excel_export.load_addresses(combined_issues)
+            combined_issues = issue_excel_export.img_relative_path(combined_issues)
+            issue_excel_export.saved_yaml_file(combined_issues, filepath + '.yaml')
+            issue_excel_export.export_to_xlsx(combined_issues, filepath + '.xlsx', '')
+            issue_excel_export.saved_zip_file(combined_issues, filepath)
+
+            bot.send_document(message.chat.id, open(filepath + '.xlsx', 'rb')).wait()
+            bot.send_document(message.chat.id, open(filepath + '.yaml', 'rb')).wait()
+            bot.send_document(message.chat.id, open(filepath + '.zip', 'rb')).wait()
+
+            bot.send_message(user.id, f"Отчет по дате {date_time_str} был отправлен", reply_markup=ReportTypesKeyboard)
+
+            os.remove(Path(pathlib.Path.cwd(), filepath + '.xlsx'))
+            os.remove(Path(pathlib.Path.cwd(), filepath + '.yaml'))
+            os.remove(Path(pathlib.Path.cwd(), filepath + '.zip'))
+
+            logger.info(f"User {user.id} success sending a report by date {date_time_str} into service panel")
+            user.state = "conditions_report"
+            return
+        else:
+            return
 
     if user.state == "type_by_type":
-        bot.send_message(user.id, "Сообщение об отправке отчета по типу.", reply_markup=ReportTypesKeyboard)
-        logger.info(f"User {user.id} success sending a report by type into service panel")
-        user.state = "conditions_report"
+        types = message.text
+        if message.text in IssueTypes:
+            bot.send_message(user.id, "Формирование отчета может занять некоторое время. Пожалуйста, подождите.")
 
-    if user.state == "type_by_date_and_type":
-        bot.send_message(user.id, "Сообщение об отправке отчета по дате и типу.", reply_markup=ReportTypesKeyboard)
-        logger.info(f"User {user.id} success sending a report by date and type into service panel")
-        user.state = "conditions_report"
+            filepath = settings.report_files_directory + types + str(
+                time_now.timestamp()) + "_" + str(user.id)
+            combined_issues = issue_excel_export.combine_reports(f'{settings.output_files_directory}')
+            combined_issues = issue_excel_export.select_issues_by_type(types, combined_issues)
+            combined_issues = issue_excel_export.load_addresses(combined_issues)
+            combined_issues = issue_excel_export.img_relative_path(combined_issues)
+            issue_excel_export.saved_yaml_file(combined_issues, filepath + '.yaml')
+            issue_excel_export.export_to_xlsx(combined_issues, filepath + '.xlsx', '')
+            issue_excel_export.saved_zip_file(combined_issues, filepath)
+
+            bot.send_document(message.chat.id, open(filepath + '.xlsx', 'rb')).wait()
+            bot.send_document(message.chat.id, open(filepath + '.yaml', 'rb')).wait()
+            bot.send_document(message.chat.id, open(filepath + '.zip', 'rb')).wait()
+
+            bot.send_message(user.id, f"Отчет по типу {types} был отправлен", reply_markup=ReportTypesKeyboard)
+
+            os.remove(Path(pathlib.Path.cwd(), filepath + '.xlsx'))
+            os.remove(Path(pathlib.Path.cwd(), filepath + '.yaml'))
+            os.remove(Path(pathlib.Path.cwd(), filepath + '.zip'))
+            logger.info(f"User {user.id} success sending a report by type {types} into service panel")
+            user.state = "conditions_report"
+            return
+        else:
+            return
+        # select_issues_by_type_and_date
+    if user.state == "type_by_date_and_type1":
+        date_time_str = message.text
+        if message.text != ReportTypes[2]:
+            bot.send_message(user.id, "Выберите тип:", reply_markup=IssueTypesKeyboard).wait()
+            user.state = "type_by_date_and_type2"
+            return
+        else:
+            return
+    if user.state == "type_by_date_and_type2":
+        #if message.text in IssueTypes:
+            #date_time_str = message.text
+        #types = message.text
+        if message.text in IssueTypes:
+            bot.send_message(user.id, "Формирование отчета может занять некоторое время. Пожалуйста, подождите.")
+            date_time_obj = datetime.datetime.strptime(date_time_str, '%Y-%m-%d').date()
+            filepath = settings.report_files_directory + date_time_str + types + str(
+                time_now.timestamp()) + "_" + str(user.id)
+            combined_issues = issue_excel_export.combine_reports(f'{settings.output_files_directory}')
+            combined_issues = issue_excel_export.select_issues_by_type_and_date(date_time_obj, types, combined_issues)
+            combined_issues = issue_excel_export.load_addresses(combined_issues)
+            combined_issues = issue_excel_export.img_relative_path(combined_issues)
+            issue_excel_export.saved_yaml_file(combined_issues, filepath + '.yaml')
+            issue_excel_export.export_to_xlsx(combined_issues, filepath + '.xlsx', '')
+            issue_excel_export.saved_zip_file(combined_issues, filepath)
+
+            bot.send_document(message.chat.id, open(filepath + '.xlsx', 'rb')).wait()
+            bot.send_document(message.chat.id, open(filepath + '.yaml', 'rb')).wait()
+            bot.send_document(message.chat.id, open(filepath + '.zip', 'rb')).wait()
+
+            bot.send_message(user.id, f"Отчет по типу {types} за {date_time_str} был отправлен", reply_markup=ReportTypesKeyboard)
+
+            os.remove(Path(pathlib.Path.cwd(), filepath + '.xlsx'))
+            os.remove(Path(pathlib.Path.cwd(), filepath + '.yaml'))
+            os.remove(Path(pathlib.Path.cwd(), filepath + '.zip'))
+            logger.info(f"User {user.id} success sending a report by date and type into service panel")
+            user.state = "conditions_report"
+            return
+        else:
+            return
 
     if message.text == '/help' or message.text == "помощь":
         bot.send_message(user.id,
