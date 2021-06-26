@@ -20,6 +20,7 @@ Users = []
 logger = None
 
 
+
 def logger_init():
     log = logging.getLogger("BKG_BOT")
     log.setLevel(logging.INFO)
@@ -155,35 +156,40 @@ def main_handler(message: telebot.types.Message):
         if message.text in IssueTypes:
             user.report_conditions.report_type = message.text
             bot.send_message(user.id, "Формирование отчета может занять некоторое время. Пожалуйста, подождите.")
-            date_time_obj = datetime.datetime.strptime(user.report_conditions.report_date, '%Y-%m-%d').date()
-            filepath = settings.report_files_directory \
-                       + user.report_conditions.report_date + user.report_conditions.report_type + str(
-                time_now.timestamp()) + "_" + str(user.id)
-            combined_issues = issue_excel_export.combine_reports(f'{settings.output_files_directory}')
-            combined_issues = issue_excel_export.select_issues_by_type_and_date(date_time_obj,
-                                                                                user.report_conditions.report_type,
-                                                                                combined_issues)
-            combined_issues = issue_excel_export.load_addresses(combined_issues)
-            combined_issues = issue_excel_export.img_relative_path(combined_issues)
-            issue_excel_export.saved_yaml_file(combined_issues, filepath + '.yaml')
-            issue_excel_export.export_to_xlsx(combined_issues, filepath + '.xlsx', '')
-            issue_excel_export.saved_zip_file(combined_issues, filepath)
+            try:
+                date_time_obj = datetime.datetime.strptime(user.report_conditions.report_date, '%Y-%m-%d').date()
+                filepath = settings.report_files_directory \
+                           + user.report_conditions.report_date + user.report_conditions.report_type + str(
+                    time_now.timestamp()) + "_" + str(user.id)
+                combined_issues = issue_excel_export.combine_reports(f'{settings.output_files_directory}')
+                combined_issues = issue_excel_export.select_issues_by_type_and_date(date_time_obj,
+                                                                                    user.report_conditions.report_type,
+                                                                                    combined_issues)
+                combined_issues = issue_excel_export.load_addresses(combined_issues)
+                combined_issues = issue_excel_export.img_relative_path(combined_issues)
+                issue_excel_export.saved_yaml_file(combined_issues, filepath + '.yaml')
+                issue_excel_export.export_to_xlsx(combined_issues, filepath + '.xlsx', '')
+                issue_excel_export.saved_zip_file(combined_issues, filepath)
 
-            bot.send_document(message.chat.id, open(filepath + '.xlsx', 'rb')).wait()
-            bot.send_document(message.chat.id, open(filepath + '.yaml', 'rb')).wait()
-            bot.send_document(message.chat.id, open(filepath + '.zip', 'rb')).wait()
+                bot.send_document(message.chat.id, open(filepath + '.xlsx', 'rb')).wait()
+                bot.send_document(message.chat.id, open(filepath + '.yaml', 'rb')).wait()
+                bot.send_document(message.chat.id, open(filepath + '.zip', 'rb')).wait()
 
-            bot.send_message(user.id,
-                             f"Отчет по типу {user.report_conditions.report_type} "
-                             f"за {user.report_conditions.report_date} был отправлен",
-                             reply_markup=keyboards.get_report_types_keyboard())
+                bot.send_message(user.id,
+                                 f"Отчет по типу {user.report_conditions.report_type} "
+                                 f"за {user.report_conditions.report_date} был отправлен",
+                                 reply_markup=keyboards.get_report_types_keyboard())
 
-            os.remove(Path(pathlib.Path.cwd(), filepath + '.xlsx'))
-            os.remove(Path(pathlib.Path.cwd(), filepath + '.yaml'))
-            os.remove(Path(pathlib.Path.cwd(), filepath + '.zip'))
-            logger.info(f"User {user.id} success sending a report by date and type into service panel")
-            user.state = "conditions_report"
-            return
+                os.remove(Path(pathlib.Path.cwd(), filepath + '.xlsx'))
+                os.remove(Path(pathlib.Path.cwd(), filepath + '.yaml'))
+                os.remove(Path(pathlib.Path.cwd(), filepath + '.zip'))
+                logger.info(f"User {user.id} success sending a report by date and type into service panel")
+                user.state = "conditions_report"
+                return
+            except ValueError:
+                bot.send_message(user.id, "Ошибка. Формат даты был указан неверно, попробуйте снова")
+                user.state = "type_by_date_and_type"
+                return
         else:
             bot.send_message(user.id, "Неправильно указан тип обращений").wait()
             bot.send_message(user.id, "Выберите тип отчета.", reply_markup=keyboards.get_report_types_keyboard())
@@ -346,29 +352,32 @@ def create_and_send_report_by_type(message, time_now, user):
 
 
 def create_and_send_report_by_date(message, time_now, user):
-    date_time_str = message.text
-    bot.send_message(user.id, "Формирование отчета может занять некоторое время. Пожалуйста, подождите.")
-    date_time_obj = datetime.datetime.strptime(date_time_str, '%Y-%m-%d').date()
-    filepath = settings.report_files_directory + date_time_str + str(
-        time_now.timestamp()) + "_" + str(user.id)
-    combined_issues = issue_excel_export.combine_reports(f'{settings.output_files_directory}')
-    combined_issues = issue_excel_export.select_issues_by_date(date_time_obj, combined_issues)
-    combined_issues = issue_excel_export.load_addresses(combined_issues)
-    combined_issues = issue_excel_export.img_relative_path(combined_issues)
-    issue_excel_export.saved_yaml_file(combined_issues, filepath + '.yaml')
-    issue_excel_export.export_to_xlsx(combined_issues, filepath + '.xlsx', '')
-    issue_excel_export.saved_zip_file(combined_issues, filepath)
-    bot.send_document(message.chat.id, open(filepath + '.xlsx', 'rb')).wait()
-    bot.send_document(message.chat.id, open(filepath + '.yaml', 'rb')).wait()
-    bot.send_document(message.chat.id, open(filepath + '.zip', 'rb')).wait()
-    bot.send_message(user.id, f"Отчет по дате {date_time_str} был отправлен",
-                     reply_markup=keyboards.get_report_types_keyboard())
-    os.remove(Path(pathlib.Path.cwd(), filepath + '.xlsx'))
-    os.remove(Path(pathlib.Path.cwd(), filepath + '.yaml'))
-    os.remove(Path(pathlib.Path.cwd(), filepath + '.zip'))
-    logger.info(f"User {user.id} success sending a report by date {date_time_str} into service panel")
-    user.state = "conditions_report"
-
+    try:
+        date_time_str = message.text
+        bot.send_message(user.id, "Формирование отчета может занять некоторое время. Пожалуйста, подождите.")
+        date_time_obj = datetime.datetime.strptime(date_time_str, '%Y-%m-%d').date()
+        filepath = settings.report_files_directory + date_time_str + str(
+            time_now.timestamp()) + "_" + str(user.id)
+        combined_issues = issue_excel_export.combine_reports(f'{settings.output_files_directory}')
+        combined_issues = issue_excel_export.select_issues_by_date(date_time_obj, combined_issues)
+        combined_issues = issue_excel_export.load_addresses(combined_issues)
+        combined_issues = issue_excel_export.img_relative_path(combined_issues)
+        issue_excel_export.saved_yaml_file(combined_issues, filepath + '.yaml')
+        issue_excel_export.export_to_xlsx(combined_issues, filepath + '.xlsx', '')
+        issue_excel_export.saved_zip_file(combined_issues, filepath)
+        bot.send_document(message.chat.id, open(filepath + '.xlsx', 'rb')).wait()
+        bot.send_document(message.chat.id, open(filepath + '.yaml', 'rb')).wait()
+        bot.send_document(message.chat.id, open(filepath + '.zip', 'rb')).wait()
+        bot.send_message(user.id, f"Отчет по дате {date_time_str} был отправлен",
+                         reply_markup=keyboards.get_report_types_keyboard())
+        os.remove(Path(pathlib.Path.cwd(), filepath + '.xlsx'))
+        os.remove(Path(pathlib.Path.cwd(), filepath + '.yaml'))
+        os.remove(Path(pathlib.Path.cwd(), filepath + '.zip'))
+        logger.info(f"User {user.id} success sending a report by date {date_time_str} into service panel")
+        user.state = "conditions_report"
+    except ValueError:
+        bot.send_message(user.id, "Ошибка. Формат даты указан неверно, попробуйте снова")
+        return
 
 def danger_zone_processing(message, user):
     if message.text == "Перезапуск бота":
