@@ -521,17 +521,18 @@ def service_menu_processing(message, time_now, user):
     if message.text == 'Опасная зона':
         enter_to_danger_zone(message, user)
 
-    if message.text == 'Выгрузка сырых файлов':
-        filepath = settings.report_files_directory + "backup" + "_" + str(datetime.datetime.now().date()) + str(
-            time_now.timestamp()) + "_" + str(
-            user.id)
-        issue_excel_export.open_and_load_zip_backup(f'{settings.output_files_directory}', filepath)
-        bot.send_document(message.chat.id, open(filepath + '.zip', 'rb')).wait()
-        bot.send_message(user.id, "Выгрузка была завершена", reply_markup=keyboards.get_service_menu_keyboard())
-        os.remove(Path(pathlib.Path.cwd(), filepath + '.zip'))
-        logger.info(
-            f"Были выгружены все файлы из {settings.output_files_directory} на момент {time_now.date()} пользователю: "
-            f"{user.id}")
+    if False:
+        if message.text == 'Выгрузка сырых файлов':
+            filepath = settings.report_files_directory + "backup" + "_" + str(datetime.datetime.now().date()) + str(
+                time_now.timestamp()) + "_" + str(
+                user.id)
+            issue_excel_export.open_and_load_zip_backup(f'{settings.output_files_directory}', filepath)
+            bot.send_document(message.chat.id, open(filepath + '.zip', 'rb')).wait()
+            bot.send_message(user.id, "Выгрузка была завершена", reply_markup=keyboards.get_service_menu_keyboard())
+            os.remove(Path(pathlib.Path.cwd(), filepath + '.zip'))
+            logger.info(
+                f"Были выгружены все файлы из {settings.output_files_directory} на момент {time_now.date()} пользователю: "
+                f"{user.id}")
 
     if message.text == 'В начало':
         bot.send_message(user.id,
