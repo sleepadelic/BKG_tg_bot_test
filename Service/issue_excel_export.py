@@ -90,6 +90,18 @@ def select_issues_by_date(date, issues):
     return selected_issues
 
 
+def select_issues_by_period(date_one, date_two, issues):
+    selected_issues = []
+    while date_one <= date_two:
+        iss: Models.Issue
+        for iss in issues:
+            if date_one == iss.send_time.date():
+                selected_issues.append(iss)
+        date_one = date_one + datetime.timedelta(days=1)
+
+    return selected_issues
+
+
 def select_issues_by_type(type: str, issues):
     """
     :param type: выбор с клавиатуры, строка

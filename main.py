@@ -194,6 +194,58 @@ def main_handler(message: telebot.types.Message):
             bot.send_message(user.id, "Выберите тип отчета.", reply_markup=keyboards.get_report_types_keyboard())
         return
 
+    if user.state == "type_by_period":
+        user.report_conditions.report_date_one = message.text
+        bot.send_message(user.id, 'Напишите конечную дату:').wait()
+        user.state = 'type_by_period:get_date_two'
+        return
+
+   # if user.state == 'type_by_period:get_date_one':
+        #user.report_conditions.report_date_two = message.text
+        #bot.send_message(user.id, 'Напишите конечную дату:').wait()
+        #user.state = 'type_by_period:get_date_two'
+        #return
+
+    if user.state == 'type_by_period:get_date_two':
+        user.report_conditions.report_date_two = message.text
+        bot.send_message(user.id, "Формирование отчета может занять некоторое время. Пожалуйста, подождите.").wait()
+        try:
+            date_time_obj_one = datetime.datetime.strptime(user.report_conditions.report_date_one, '%Y-%m-%d').date()
+            date_time_obj_two = datetime.datetime.strptime(user.report_conditions.report_date_two, '%Y-%m-%d').date()
+            filepath = settings.report_files_directory \
+                       + user.report_conditions.report_date_one + "_" + user.report_conditions.report_date_two \
+                       + str(time_now.timestamp()) + "_" + str(user.id)
+            combined_issues = issue_excel_export.combine_reports(f'{settings.output_files_directory}')
+            combined_issues = issue_excel_export.select_issues_by_period(date_time_obj_one, date_time_obj_two,
+                                                                         combined_issues)
+            combined_issues = issue_excel_export.load_addresses(combined_issues)
+            combined_issues = issue_excel_export.img_relative_path(combined_issues)
+            issue_excel_export.saved_yaml_file(combined_issues, filepath + '.yaml')
+            issue_excel_export.export_to_xlsx(combined_issues, filepath + '.xlsx', '')
+            issue_excel_export.saved_zip_file(combined_issues, filepath)
+            bot.send_document(message.chat.id, open(filepath + '.xlsx', 'rb')).wait()
+            bot.send_document(message.chat.id, open(filepath + '.yaml', 'rb')).wait()
+            bot.send_document(message.chat.id, open(filepath + '.zip', 'rb')).wait()
+
+            bot.send_message(user.id,
+                             f"Отчет за период {user.report_conditions.report_date_one} — "
+                             f"{user.report_conditions.report_date_two} был отправлен",
+                             reply_markup=keyboards.get_report_types_keyboard())
+
+            os.remove(Path(pathlib.Path.cwd(), filepath + '.xlsx'))
+            os.remove(Path(pathlib.Path.cwd(), filepath + '.yaml'))
+            os.remove(Path(pathlib.Path.cwd(), filepath + '.zip'))
+            logger.info(
+                f"User {user.id} success sending a report by period {user.report_conditions.report_date_one} — "
+                f"{user.report_conditions.report_date_two} and type into service panel")
+            user.state = "conditions_report"
+            return
+        except ValueError:
+            bot.send_message(user.id, "Ошибка. Формат даты был указан неверно, попробуйте снова\n"
+                                      "Напишите начальную дату (прим. 2021-06-26):").wait()
+            user.state = "type_by_period"
+            return
+
     if message.text == '/help' or message.text == "помощь":
         send_help_message(user)
         return
@@ -305,6 +357,9 @@ def condition_reports_menu(message, user):
     if message.text == 'По дате и типу':
         bot.send_message(user.id, 'Напишите дату (прим. 2021-06-26):').wait()
         user.state = "type_by_date_and_type"
+    if message.text == 'За период':
+        bot.send_message(user.id, 'Напишите начальную дату (прим. 2021-06-26):').wait()
+        user.state = "type_by_period"
     if message.text == 'В начало':
         bot.send_message(user.id,
                          "Бот для загрузки информации на портал bkg.sibadi.org, приветствует тебя!\n"
