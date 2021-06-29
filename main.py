@@ -121,6 +121,7 @@ def main_handler(message: telebot.types.Message):
             return
         else:
             bot.send_message(user.id, "У вас нет доступа для использования данной команды").wait()
+            logger.info(f"Unsuccess login id into service panel: {user.id}")
             return
 
 # Компоненты сервисного меню
@@ -201,6 +202,7 @@ def main_handler(message: telebot.types.Message):
             return
         else:
             bot.send_message(user.id, "У вас нет доступа для использования данной команды").wait()
+            logger.info(f"Unsuccess login id into DANGER ZONE: {user.id}")
             return
 
 # Компоненты опасной зоны
@@ -224,7 +226,8 @@ def main_handler(message: telebot.types.Message):
             user.state = 'links'
 
         if message.text == "Выгрузка логов":
-            user.state = 'discharge'
+            bot.send_message(user.id, "Выгрузка логов .", reply_markup=DANGERTypesKeyboard)
+            user.state = 'danger'
 
         if message.text == "Версия бота":
             user.state = 'version'
