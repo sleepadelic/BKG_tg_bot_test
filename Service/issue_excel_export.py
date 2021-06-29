@@ -1,4 +1,5 @@
 import datetime
+import os
 import openpyxl
 import settings
 import zipfile
@@ -89,6 +90,18 @@ def select_issues_by_date(date, issues):
     return selected_issues
 
 
+def select_issues_by_period(date_one, date_two, issues):
+    selected_issues = []
+    while date_one <= date_two:
+        iss: Models.Issue
+        for iss in issues:
+            if date_one == iss.send_time.date():
+                selected_issues.append(iss)
+        date_one = date_one + datetime.timedelta(days=1)
+
+    return selected_issues
+
+
 def select_issues_by_type(type: str, issues):
     """
     :param type: выбор с клавиатуры, строка
@@ -125,6 +138,14 @@ def saved_zip_file(issues, filename):
     iss: Models.Issue
     for iss in issues:
         new_arch.write(iss.image)
+    new_arch.close()
+
+
+def open_and_load_zip_backup(folder_path, filename):
+    new_arch = zipfile.ZipFile(filename + '.zip', mode="w")
+    for file in os.listdir(folder_path):
+        if file.endswith(".yaml") or file.endswith(".jpg"):
+            new_arch.write(folder_path+file)
     new_arch.close()
 
 

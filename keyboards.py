@@ -16,7 +16,7 @@ def get_report_types_keyboard():
     ReportTypesKeyboard = telebot.types.ReplyKeyboardMarkup(one_time_keyboard=True)
     ReportTypesKeyboard.add(ReportTypes[0], ReportTypes[1])
     ReportTypesKeyboard.add(ReportTypes[2], ReportTypes[3])
-    ReportTypesKeyboard.add(ReportTypes[4])
+    ReportTypesKeyboard.add(ReportTypes[4], ReportTypes[5])
     return ReportTypesKeyboard
 
 
