@@ -154,7 +154,9 @@ def main_handler(message: telebot.types.Message):
     if user.state == "type_by_date_and_type:get_type":
         if message.text in IssueTypes:
             user.report_conditions.report_type = message.text
-            bot.send_message(user.id, "Формирование отчета может занять некоторое время. Пожалуйста, подождите.")
+            bot.send_message(user.id, "Формирование отчета может занять некоторое время (около трех минут)."
+                                      "По завершению должно быть отправлено три файла.\n"
+                                      "Пожалуйста, дождитесь сообщения о завершении операции.").wait()
             try:
                 date_time_obj = datetime.datetime.strptime(user.report_conditions.report_date, '%Y-%m-%d').date()
                 filepath = settings.report_files_directory \
@@ -170,9 +172,9 @@ def main_handler(message: telebot.types.Message):
                 issue_excel_export.export_to_xlsx(combined_issues, filepath + '.xlsx', '')
                 issue_excel_export.saved_zip_file(combined_issues, filepath)
 
-                bot.send_document(message.chat.id, open(filepath + '.xlsx', 'rb')).wait()
+                bot.send_document(message.chat.id, open(filepath + '.xlsx', 'rb'), timeout=120).wait()
                 bot.send_document(message.chat.id, open(filepath + '.yaml', 'rb')).wait()
-                bot.send_document(message.chat.id, open(filepath + '.zip', 'rb')).wait()
+                bot.send_document(message.chat.id, open(filepath + '.zip', 'rb'), timeout=60).wait()
 
                 bot.send_message(user.id,
                                  f"Отчет по типу {user.report_conditions.report_type} "
@@ -200,15 +202,11 @@ def main_handler(message: telebot.types.Message):
         user.state = 'type_by_period:get_date_two'
         return
 
-   # if user.state == 'type_by_period:get_date_one':
-        #user.report_conditions.report_date_two = message.text
-        #bot.send_message(user.id, 'Напишите конечную дату:').wait()
-        #user.state = 'type_by_period:get_date_two'
-        #return
-
     if user.state == 'type_by_period:get_date_two':
         user.report_conditions.report_date_two = message.text
-        bot.send_message(user.id, "Формирование отчета может занять некоторое время. Пожалуйста, подождите.").wait()
+        bot.send_message(user.id, "Формирование отчета может занять некоторое время (около трех минут)."
+                                  "По завершению должно быть отправлено три файла.\n"
+                                  "Пожалуйста, дождитесь сообщения о завершении операции.").wait()
         try:
             date_time_obj_one = datetime.datetime.strptime(user.report_conditions.report_date_one, '%Y-%m-%d').date()
             date_time_obj_two = datetime.datetime.strptime(user.report_conditions.report_date_two, '%Y-%m-%d').date()
@@ -223,9 +221,9 @@ def main_handler(message: telebot.types.Message):
             issue_excel_export.saved_yaml_file(combined_issues, filepath + '.yaml')
             issue_excel_export.export_to_xlsx(combined_issues, filepath + '.xlsx', '')
             issue_excel_export.saved_zip_file(combined_issues, filepath)
-            bot.send_document(message.chat.id, open(filepath + '.xlsx', 'rb')).wait()
+            bot.send_document(message.chat.id, open(filepath + '.xlsx', 'rb'), timeout=120).wait()
             bot.send_document(message.chat.id, open(filepath + '.yaml', 'rb')).wait()
-            bot.send_document(message.chat.id, open(filepath + '.zip', 'rb')).wait()
+            bot.send_document(message.chat.id, open(filepath + '.zip', 'rb'), timeout=60).wait()
 
             bot.send_message(user.id,
                              f"Отчет за период {user.report_conditions.report_date_one} — "
@@ -375,8 +373,9 @@ def condition_reports_menu(message, user):
 def create_and_send_report_by_type(message, time_now, user):
     types = message.text
     if message.text in IssueTypes:
-        bot.send_message(user.id, "Формирование отчета может занять некоторое время. Пожалуйста, подождите.")
-
+        bot.send_message(user.id, "Формирование отчета может занять некоторое время (около трех минут)."
+                                  "По завершению должно быть отправлено три файла.\n"
+                                  "Пожалуйста, дождитесь сообщения о завершении операции.").wait()
         filepath = settings.report_files_directory + types + str(
             time_now.timestamp()) + "_" + str(user.id)
         combined_issues = issue_excel_export.combine_reports(f'{settings.output_files_directory}')
@@ -387,9 +386,9 @@ def create_and_send_report_by_type(message, time_now, user):
         issue_excel_export.export_to_xlsx(combined_issues, filepath + '.xlsx', '')
         issue_excel_export.saved_zip_file(combined_issues, filepath)
 
-        bot.send_document(message.chat.id, open(filepath + '.xlsx', 'rb')).wait()
+        bot.send_document(message.chat.id, open(filepath + '.xlsx', 'rb'), timeout=120).wait()
         bot.send_document(message.chat.id, open(filepath + '.yaml', 'rb')).wait()
-        bot.send_document(message.chat.id, open(filepath + '.zip', 'rb')).wait()
+        bot.send_document(message.chat.id, open(filepath + '.zip', 'rb'), timeout=60).wait()
 
         bot.send_message(user.id, f"Отчет по {types} был отправлен", reply_markup=keyboards.get_report_types_keyboard())
 
@@ -408,7 +407,9 @@ def create_and_send_report_by_type(message, time_now, user):
 def create_and_send_report_by_date(message, time_now, user):
     try:
         date_time_str = message.text
-        bot.send_message(user.id, "Формирование отчета может занять некоторое время. Пожалуйста, подождите.")
+        bot.send_message(user.id, "Формирование отчета может занять некоторое время (около трех минут)."
+                                  "По завершению должно быть отправлено три файла.\n"
+                                  "Пожалуйста, дождитесь сообщения о завершении операции.").wait()
         date_time_obj = datetime.datetime.strptime(date_time_str, '%Y-%m-%d').date()
         filepath = settings.report_files_directory + date_time_str + str(
             time_now.timestamp()) + "_" + str(user.id)
@@ -419,9 +420,9 @@ def create_and_send_report_by_date(message, time_now, user):
         issue_excel_export.saved_yaml_file(combined_issues, filepath + '.yaml')
         issue_excel_export.export_to_xlsx(combined_issues, filepath + '.xlsx', '')
         issue_excel_export.saved_zip_file(combined_issues, filepath)
-        bot.send_document(message.chat.id, open(filepath + '.xlsx', 'rb')).wait()
+        bot.send_document(message.chat.id, open(filepath + '.xlsx', 'rb'), timeout=120).wait()
         bot.send_document(message.chat.id, open(filepath + '.yaml', 'rb')).wait()
-        bot.send_document(message.chat.id, open(filepath + '.zip', 'rb')).wait()
+        bot.send_document(message.chat.id, open(filepath + '.zip', 'rb'), timeout=60).wait()
         bot.send_message(user.id, f"Отчет по дате {date_time_str} был отправлен",
                          reply_markup=keyboards.get_report_types_keyboard())
         os.remove(Path(pathlib.Path.cwd(), filepath + '.xlsx'))
@@ -495,6 +496,9 @@ def service_menu_processing(message, time_now, user):
         bot.send_message(user.id, "Сообщения об остановк бота через 5 минут отправлены.",
                          reply_markup=keyboards.get_service_menu_keyboard())
     if message.text == 'Выгрузка отчета за сегодня':
+        bot.send_message(user.id, "Формирование отчета может занять некоторое время (около трех минут)."
+                                  "По завершению должно быть отправлено три файла.\n"
+                                  "Пожалуйста, дождитесь сообщения о завершении операции.").wait()
         filepath = settings.report_files_directory + str(datetime.datetime.now().date()) + str(
             time_now.timestamp()) + "_" + str(
             user.id)
@@ -506,9 +510,9 @@ def service_menu_processing(message, time_now, user):
         issue_excel_export.export_to_xlsx(combined_issues, filepath + '.xlsx', '')
         issue_excel_export.saved_zip_file(combined_issues, filepath)
 
-        bot.send_document(message.chat.id, open(filepath + '.xlsx', 'rb')).wait()
+        bot.send_document(message.chat.id, open(filepath + '.xlsx', 'rb'), timeout=120).wait()
         bot.send_document(message.chat.id, open(filepath + '.yaml', 'rb')).wait()
-        bot.send_document(message.chat.id, open(filepath + '.zip', 'rb')).wait()
+        bot.send_document(message.chat.id, open(filepath + '.zip', 'rb'), timeout=60).wait()
 
         bot.send_message(user.id, "Отчет был отправлен.", reply_markup=keyboards.get_service_menu_keyboard())
         os.remove(Path(pathlib.Path.cwd(), filepath + '.xlsx'))
@@ -521,18 +525,19 @@ def service_menu_processing(message, time_now, user):
     if message.text == 'Опасная зона':
         enter_to_danger_zone(message, user)
 
-    if False:
-        if message.text == 'Выгрузка сырых файлов':
-            filepath = settings.report_files_directory + "backup" + "_" + str(datetime.datetime.now().date()) + str(
-                time_now.timestamp()) + "_" + str(
-                user.id)
-            issue_excel_export.open_and_load_zip_backup(f'{settings.output_files_directory}', filepath)
-            bot.send_document(message.chat.id, open(filepath + '.zip', 'rb')).wait()
-            bot.send_message(user.id, "Выгрузка была завершена", reply_markup=keyboards.get_service_menu_keyboard())
-            os.remove(Path(pathlib.Path.cwd(), filepath + '.zip'))
-            logger.info(
-                f"Были выгружены все файлы из {settings.output_files_directory} на момент {time_now.date()} пользователю: "
-                f"{user.id}")
+    if message.text == 'Выгрузка сырых файлов':
+        filepath = settings.report_files_directory + "backup" + "_" + str(datetime.datetime.now().date()) + str(
+            time_now.timestamp()) + "_" + str(
+            user.id)
+        issue_excel_export.open_and_load_zip_backup(f'{settings.output_files_directory}', filepath)
+        bot.send_message(user.id, "Выполнение запроса может занять некоторое время (не больше одной минуты). "
+                                  "Пожалуйста, подождите.")
+        bot.send_document(message.chat.id, open(filepath + '.zip', 'rb'), timeout=60).wait()
+        bot.send_message(user.id, "Выгрузка была завершена", reply_markup=keyboards.get_service_menu_keyboard())
+        os.remove(Path(pathlib.Path.cwd(), filepath + '.zip'))
+        logger.info(
+            f"Были выгружены все файлы из {settings.output_files_directory} на момент {time_now.date()} пользователю: "
+            f"{user.id}")
 
     if message.text == 'В начало':
         bot.send_message(user.id,
