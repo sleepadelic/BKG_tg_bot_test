@@ -190,7 +190,7 @@ def main_handler(message: telebot.types.Message):
                 except OSError:
                     bot.send_message(user.id, "Что-то пошло не так, невозможно завершить действие "
                                               "на данный момент", reply_markup=keyboards.get_service_menu_keyboard())
-                    logger.info(f"except OSError")
+                    logger.exception("Type_by_date_and_type report exception")
                     return
             except ValueError:
                 bot.send_message(user.id, "Ошибка. Формат даты был указан неверно, попробуйте снова")
@@ -247,7 +247,7 @@ def main_handler(message: telebot.types.Message):
             except OSError:
                 bot.send_message(user.id, "Что-то пошло не так, невозможно завершить действие "
                                           "на данный момент", reply_markup=keyboards.get_service_menu_keyboard())
-                logger.info(f"except OSError")
+                logger.exception("Type_by_period report exception")
                 return
         except ValueError:
             bot.send_message(user.id, "Ошибка. Формат даты был указан неверно, попробуйте снова\n"
@@ -411,7 +411,7 @@ def create_and_send_report_by_type(message, time_now, user):
         except OSError:
             bot.send_message(user.id, "Что-то пошло не так, невозможно завершить действие "
                                       "на данный момент", reply_markup=keyboards.get_service_menu_keyboard())
-            logger.info(f"except OSError")
+            logger.exception("Type_by_type report exception")
             return
     else:
         bot.send_message(user.id, "Неправильно указан тип обращений").wait()
@@ -449,7 +449,7 @@ def create_and_send_report_by_date(message, time_now, user):
         except OSError:
             bot.send_message(user.id, "Что-то пошло не так, невозможно завершить действие "
                                       "на данный момент", reply_markup=keyboards.get_service_menu_keyboard())
-            logger.info(f"except OSError")
+            logger.exception("Type_by_date report exception")
             return
     except ValueError:
         bot.send_message(user.id, "Ошибка. Формат даты указан неверно, попробуйте снова")
@@ -543,7 +543,7 @@ def service_menu_processing(message, time_now, user):
         except OSError:
             bot.send_message(user.id, "Что-то пошло не так, невозможно завершить действие "
                                       "на данный момент", reply_markup=keyboards.get_service_menu_keyboard())
-            logger.info(f"except OSError")
+            logger.exception("Today report exception")
             return
 
     if message.text == 'Выгрузка отчета с условиями':
@@ -570,7 +570,7 @@ def service_menu_processing(message, time_now, user):
         except OSError:
             bot.send_message(user.id, "Что-то пошло не так, невозможно завершить действие "
                                       "на данный момент", reply_markup=keyboards.get_service_menu_keyboard())
-            logger.info(f"except OSError")
+            logger.exception("Backup report exception")
             return
 
     if message.text == 'В начало':
