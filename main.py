@@ -171,22 +171,27 @@ def main_handler(message: telebot.types.Message):
                 issue_excel_export.saved_yaml_file(combined_issues, filepath + '.yaml')
                 issue_excel_export.export_to_xlsx(combined_issues, filepath + '.xlsx', '')
                 issue_excel_export.saved_zip_file(combined_issues, filepath)
+                try:
+                    bot.send_document(message.chat.id, open(filepath + '.xlsx', 'rb'), timeout=120).wait()
+                    bot.send_document(message.chat.id, open(filepath + '.yaml', 'rb')).wait()
+                    bot.send_document(message.chat.id, open(filepath + '.zip', 'rb'), timeout=60).wait()
 
-                bot.send_document(message.chat.id, open(filepath + '.xlsx', 'rb'), timeout=120).wait()
-                bot.send_document(message.chat.id, open(filepath + '.yaml', 'rb')).wait()
-                bot.send_document(message.chat.id, open(filepath + '.zip', 'rb'), timeout=60).wait()
+                    bot.send_message(user.id,
+                                     f"Отчет по типу {user.report_conditions.report_type} "
+                                     f"за {user.report_conditions.report_date} был отправлен",
+                                     reply_markup=keyboards.get_report_types_keyboard())
 
-                bot.send_message(user.id,
-                                 f"Отчет по типу {user.report_conditions.report_type} "
-                                 f"за {user.report_conditions.report_date} был отправлен",
-                                 reply_markup=keyboards.get_report_types_keyboard())
-
-                os.remove(Path(pathlib.Path.cwd(), filepath + '.xlsx'))
-                os.remove(Path(pathlib.Path.cwd(), filepath + '.yaml'))
-                os.remove(Path(pathlib.Path.cwd(), filepath + '.zip'))
-                logger.info(f"User {user.id} success sending a report by date and type into service panel")
-                user.state = "conditions_report"
-                return
+                    os.remove(Path(pathlib.Path.cwd(), filepath + '.xlsx'))
+                    os.remove(Path(pathlib.Path.cwd(), filepath + '.yaml'))
+                    os.remove(Path(pathlib.Path.cwd(), filepath + '.zip'))
+                    logger.info(f"User {user.id} success sending a report by date and type into service panel")
+                    user.state = "conditions_report"
+                    return
+                except OSError:
+                    bot.send_message(user.id, "Что-то пошло не так, невозможно завершить действие "
+                                              "на данный момент", reply_markup=keyboards.get_service_menu_keyboard())
+                    logger.info(f"except OSError")
+                    return
             except ValueError:
                 bot.send_message(user.id, "Ошибка. Формат даты был указан неверно, попробуйте снова")
                 user.state = "type_by_date_and_type"
@@ -221,23 +226,29 @@ def main_handler(message: telebot.types.Message):
             issue_excel_export.saved_yaml_file(combined_issues, filepath + '.yaml')
             issue_excel_export.export_to_xlsx(combined_issues, filepath + '.xlsx', '')
             issue_excel_export.saved_zip_file(combined_issues, filepath)
-            bot.send_document(message.chat.id, open(filepath + '.xlsx', 'rb'), timeout=120).wait()
-            bot.send_document(message.chat.id, open(filepath + '.yaml', 'rb')).wait()
-            bot.send_document(message.chat.id, open(filepath + '.zip', 'rb'), timeout=60).wait()
+            try:
+                bot.send_document(message.chat.id, open(filepath + '.xlsx', 'rb'), timeout=120).wait()
+                bot.send_document(message.chat.id, open(filepath + '.yaml', 'rb')).wait()
+                bot.send_document(message.chat.id, open(filepath + '.zip', 'rb'), timeout=60).wait()
 
-            bot.send_message(user.id,
-                             f"Отчет за период {user.report_conditions.report_date_one} — "
-                             f"{user.report_conditions.report_date_two} был отправлен",
-                             reply_markup=keyboards.get_report_types_keyboard())
+                bot.send_message(user.id,
+                                 f"Отчет за период {user.report_conditions.report_date_one} — "
+                                 f"{user.report_conditions.report_date_two} был отправлен",
+                                 reply_markup=keyboards.get_report_types_keyboard())
 
-            os.remove(Path(pathlib.Path.cwd(), filepath + '.xlsx'))
-            os.remove(Path(pathlib.Path.cwd(), filepath + '.yaml'))
-            os.remove(Path(pathlib.Path.cwd(), filepath + '.zip'))
-            logger.info(
-                f"User {user.id} success sending a report by period {user.report_conditions.report_date_one} — "
-                f"{user.report_conditions.report_date_two} and type into service panel")
-            user.state = "conditions_report"
-            return
+                os.remove(Path(pathlib.Path.cwd(), filepath + '.xlsx'))
+                os.remove(Path(pathlib.Path.cwd(), filepath + '.yaml'))
+                os.remove(Path(pathlib.Path.cwd(), filepath + '.zip'))
+                logger.info(
+                    f"User {user.id} success sending a report by period {user.report_conditions.report_date_one} — "
+                    f"{user.report_conditions.report_date_two} and type into service panel")
+                user.state = "conditions_report"
+                return
+            except OSError:
+                bot.send_message(user.id, "Что-то пошло не так, невозможно завершить действие "
+                                          "на данный момент", reply_markup=keyboards.get_service_menu_keyboard())
+                logger.info(f"except OSError")
+                return
         except ValueError:
             bot.send_message(user.id, "Ошибка. Формат даты был указан неверно, попробуйте снова\n"
                                       "Напишите начальную дату (прим. 2021-06-26):").wait()
@@ -385,19 +396,23 @@ def create_and_send_report_by_type(message, time_now, user):
         issue_excel_export.saved_yaml_file(combined_issues, filepath + '.yaml')
         issue_excel_export.export_to_xlsx(combined_issues, filepath + '.xlsx', '')
         issue_excel_export.saved_zip_file(combined_issues, filepath)
+        try:
+            bot.send_document(message.chat.id, open(filepath + '.xlsx', 'rb'), timeout=120).wait()
+            bot.send_document(message.chat.id, open(filepath + '.yaml', 'rb')).wait()
+            bot.send_document(message.chat.id, open(filepath + '.zip', 'rb'), timeout=60).wait()
 
-        bot.send_document(message.chat.id, open(filepath + '.xlsx', 'rb'), timeout=120).wait()
-        bot.send_document(message.chat.id, open(filepath + '.yaml', 'rb')).wait()
-        bot.send_document(message.chat.id, open(filepath + '.zip', 'rb'), timeout=60).wait()
+            bot.send_message(user.id, f"Отчет по {types} был отправлен", reply_markup=keyboards.get_report_types_keyboard())
 
-        bot.send_message(user.id, f"Отчет по {types} был отправлен", reply_markup=keyboards.get_report_types_keyboard())
-
-        os.remove(Path(pathlib.Path.cwd(), filepath + '.xlsx'))
-        os.remove(Path(pathlib.Path.cwd(), filepath + '.yaml'))
-        os.remove(Path(pathlib.Path.cwd(), filepath + '.zip'))
-        logger.info(f"User {user.id} success sending a report by type {types} into service panel")
-        user.state = "conditions_report"
-
+            os.remove(Path(pathlib.Path.cwd(), filepath + '.xlsx'))
+            os.remove(Path(pathlib.Path.cwd(), filepath + '.yaml'))
+            os.remove(Path(pathlib.Path.cwd(), filepath + '.zip'))
+            logger.info(f"User {user.id} success sending a report by type {types} into service panel")
+            user.state = "conditions_report"
+        except OSError:
+            bot.send_message(user.id, "Что-то пошло не так, невозможно завершить действие "
+                                      "на данный момент", reply_markup=keyboards.get_service_menu_keyboard())
+            logger.info(f"except OSError")
+            return
     else:
         bot.send_message(user.id, "Неправильно указан тип обращений").wait()
         bot.send_message(user.id, "Выберите тип отчета.", reply_markup=keyboards.get_report_types_keyboard())
@@ -420,16 +435,22 @@ def create_and_send_report_by_date(message, time_now, user):
         issue_excel_export.saved_yaml_file(combined_issues, filepath + '.yaml')
         issue_excel_export.export_to_xlsx(combined_issues, filepath + '.xlsx', '')
         issue_excel_export.saved_zip_file(combined_issues, filepath)
-        bot.send_document(message.chat.id, open(filepath + '.xlsx', 'rb'), timeout=120).wait()
-        bot.send_document(message.chat.id, open(filepath + '.yaml', 'rb')).wait()
-        bot.send_document(message.chat.id, open(filepath + '.zip', 'rb'), timeout=60).wait()
-        bot.send_message(user.id, f"Отчет по дате {date_time_str} был отправлен",
-                         reply_markup=keyboards.get_report_types_keyboard())
-        os.remove(Path(pathlib.Path.cwd(), filepath + '.xlsx'))
-        os.remove(Path(pathlib.Path.cwd(), filepath + '.yaml'))
-        os.remove(Path(pathlib.Path.cwd(), filepath + '.zip'))
-        logger.info(f"User {user.id} success sending a report by date {date_time_str} into service panel")
-        user.state = "conditions_report"
+        try:
+            bot.send_document(message.chat.id, open(filepath + '.xlsx', 'rb'), timeout=120).wait()
+            bot.send_document(message.chat.id, open(filepath + '.yaml', 'rb')).wait()
+            bot.send_document(message.chat.id, open(filepath + '.zip', 'rb'), timeout=60).wait()
+            bot.send_message(user.id, f"Отчет по дате {date_time_str} был отправлен",
+                             reply_markup=keyboards.get_report_types_keyboard())
+            os.remove(Path(pathlib.Path.cwd(), filepath + '.xlsx'))
+            os.remove(Path(pathlib.Path.cwd(), filepath + '.yaml'))
+            os.remove(Path(pathlib.Path.cwd(), filepath + '.zip'))
+            logger.info(f"User {user.id} success sending a report by date {date_time_str} into service panel")
+            user.state = "conditions_report"
+        except OSError:
+            bot.send_message(user.id, "Что-то пошло не так, невозможно завершить действие "
+                                      "на данный момент", reply_markup=keyboards.get_service_menu_keyboard())
+            logger.info(f"except OSError")
+            return
     except ValueError:
         bot.send_message(user.id, "Ошибка. Формат даты указан неверно, попробуйте снова")
         return
@@ -509,19 +530,26 @@ def service_menu_processing(message, time_now, user):
         issue_excel_export.saved_yaml_file(combined_issues, filepath + '.yaml')
         issue_excel_export.export_to_xlsx(combined_issues, filepath + '.xlsx', '')
         issue_excel_export.saved_zip_file(combined_issues, filepath)
+        try:
+            bot.send_document(message.chat.id, open(filepath + '.xlsx', 'rb'), timeout=120).wait()
+            bot.send_document(message.chat.id, open(filepath + '.yaml', 'rb')).wait()
+            bot.send_document(message.chat.id, open(filepath + '.zip', 'rb'), timeout=60).wait()
 
-        bot.send_document(message.chat.id, open(filepath + '.xlsx', 'rb'), timeout=120).wait()
-        bot.send_document(message.chat.id, open(filepath + '.yaml', 'rb')).wait()
-        bot.send_document(message.chat.id, open(filepath + '.zip', 'rb'), timeout=60).wait()
+            bot.send_message(user.id, "Отчет был отправлен.", reply_markup=keyboards.get_service_menu_keyboard())
+            os.remove(Path(pathlib.Path.cwd(), filepath + '.xlsx'))
+            os.remove(Path(pathlib.Path.cwd(), filepath + '.yaml'))
+            os.remove(Path(pathlib.Path.cwd(), filepath + '.zip'))
+            logger.info(f"Был выгружен отчет за {time_now.date()} пользователю: {user.id}")
+        except OSError:
+            bot.send_message(user.id, "Что-то пошло не так, невозможно завершить действие "
+                                      "на данный момент", reply_markup=keyboards.get_service_menu_keyboard())
+            logger.info(f"except OSError")
+            return
 
-        bot.send_message(user.id, "Отчет был отправлен.", reply_markup=keyboards.get_service_menu_keyboard())
-        os.remove(Path(pathlib.Path.cwd(), filepath + '.xlsx'))
-        os.remove(Path(pathlib.Path.cwd(), filepath + '.yaml'))
-        os.remove(Path(pathlib.Path.cwd(), filepath + '.zip'))
-        logger.info(f"Был выгружен отчет за {time_now.date()} пользователю: {user.id}")
     if message.text == 'Выгрузка отчета с условиями':
         bot.send_message(user.id, "Выберите тип отчета.", reply_markup=keyboards.get_report_types_keyboard())
         user.state = "conditions_report"
+
     if message.text == 'Опасная зона':
         enter_to_danger_zone(message, user)
 
@@ -529,15 +557,21 @@ def service_menu_processing(message, time_now, user):
         filepath = settings.report_files_directory + "backup" + "_" + str(datetime.datetime.now().date()) + str(
             time_now.timestamp()) + "_" + str(
             user.id)
-        issue_excel_export.open_and_load_zip_backup(f'{settings.output_files_directory}', filepath)
-        bot.send_message(user.id, "Выполнение запроса может занять некоторое время (не больше одной минуты). "
-                                  "Пожалуйста, подождите.")
-        bot.send_document(message.chat.id, open(filepath + '.zip', 'rb'), timeout=60).wait()
-        bot.send_message(user.id, "Выгрузка была завершена", reply_markup=keyboards.get_service_menu_keyboard())
-        os.remove(Path(pathlib.Path.cwd(), filepath + '.zip'))
-        logger.info(
-            f"Были выгружены все файлы из {settings.output_files_directory} на момент {time_now.date()} пользователю: "
-            f"{user.id}")
+        try:
+            issue_excel_export.open_and_load_zip_backup(f'{settings.output_files_directory}', filepath)
+            bot.send_message(user.id, "Выполнение запроса может занять некоторое время (не больше одной минуты). "
+                                      "Пожалуйста, подождите.")
+            bot.send_document(message.chat.id, open(filepath + '.zip', 'rb'), timeout=60).wait()
+            bot.send_message(user.id, "Выгрузка была завершена", reply_markup=keyboards.get_service_menu_keyboard())
+            os.remove(Path(pathlib.Path.cwd(), filepath + '.zip'))
+            logger.info(
+                f"Были выгружены все файлы из {settings.output_files_directory} на момент {time_now.date()} "
+                f"пользователю: {user.id}")
+        except OSError:
+            bot.send_message(user.id, "Что-то пошло не так, невозможно завершить действие "
+                                      "на данный момент", reply_markup=keyboards.get_service_menu_keyboard())
+            logger.info(f"except OSError")
+            return
 
     if message.text == 'В начало':
         bot.send_message(user.id,
