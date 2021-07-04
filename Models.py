@@ -16,6 +16,8 @@ class Issue:
 class Report_Conditions:
     report_date: str = None
     report_type: str = None
+    report_date_one: str = None
+    report_date_two: str = None
 
 
 class User:
