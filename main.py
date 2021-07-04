@@ -154,8 +154,7 @@ def main_handler(message: telebot.types.Message):
     if user.state == "type_by_date_and_type:get_type":
         if message.text in IssueTypes:
             user.report_conditions.report_type = message.text
-            bot.send_message(user.id, "Формирование отчета может занять некоторое время (около трех минут)."
-                                      "По завершению должно быть отправлено три файла.\n"
+            bot.send_message(user.id, "Формирование отчета может занять некоторое время (не более трех минут)."
                                       "Пожалуйста, дождитесь сообщения о завершении операции.").wait()
             try:
                 date_time_obj = datetime.datetime.strptime(user.report_conditions.report_date, '%Y-%m-%d').date()
@@ -253,6 +252,7 @@ def main_handler(message: telebot.types.Message):
             bot.send_message(user.id, "Ошибка. Формат даты был указан неверно, попробуйте снова\n"
                                       "Напишите начальную дату (прим. 2021-06-26):").wait()
             user.state = "type_by_period"
+            logger.exception("Type_by_period report exception")
             return
 
     if message.text == '/help' or message.text == "помощь":
@@ -493,6 +493,7 @@ def enter_to_danger_zone(message, user):
         logger.info(f"User {u_info.username} success login into DANGER ZONE")
     else:
         bot.send_message(user.id, "У вас нет доступа для использования данной команды").wait()
+        logger.info(f"Unsucces login to danger zone {user.id}")
 
 
 def service_menu_processing(message, time_now, user):
@@ -501,7 +502,6 @@ def service_menu_processing(message, time_now, user):
     if message.text == 'Кол-во обращений за день':
         combined_issues = issue_excel_export.combine_reports(f'{settings.output_files_directory}')
         today_issues = issue_excel_export.select_issues_by_date(time_now.date(), combined_issues)
-        yesterday_issues = []
         yesterday_issues = issue_excel_export.select_issues_by_date((time_now.date() -
                                                                      timedelta(days=1)), combined_issues)
         bot.send_message(user.id, f"Сегодня было отправлено {len(today_issues)}, "
@@ -514,7 +514,7 @@ def service_menu_processing(message, time_now, user):
                                          "Необходимо завершить заполнение обращения, иначе данные будут потеряны "
                                          "и потребуется повторное заполнение",
                                  reply_markup=keyboards.get_service_menu_keyboard())
-        bot.send_message(user.id, "Сообщения об остановк бота через 5 минут отправлены.",
+        bot.send_message(user.id, "Сообщения об остановке бота через 5 минут отправлены.",
                          reply_markup=keyboards.get_service_menu_keyboard())
     if message.text == 'Выгрузка отчета за сегодня':
         bot.send_message(user.id, "Формирование отчета может занять некоторое время (около трех минут)."
@@ -601,6 +601,7 @@ def enter_to_service_menu(message, user):
         logger.info(f"User {u_info.username} success login into service panel")
     else:
         bot.send_message(user.id, "У вас нет доступа для использования данной команды").wait()
+        logger.info(f"Unsuccess login id into service panel: {user.id}")
 
 
 def find_user_in_list(message, user):
