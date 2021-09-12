@@ -17,6 +17,7 @@ def get_report_types_keyboard():
     ReportTypesKeyboard.add(ReportTypes[0], ReportTypes[1])
     ReportTypesKeyboard.add(ReportTypes[2], ReportTypes[3])
     ReportTypesKeyboard.add(ReportTypes[4], ReportTypes[5])
+    ReportTypesKeyboard.add(ReportTypes[6])
     return ReportTypesKeyboard
 
 
@@ -24,8 +25,7 @@ def get_service_menu_keyboard():
     ServiceTypesKeyboard = telebot.types.ReplyKeyboardMarkup(one_time_keyboard=True)
     ServiceTypesKeyboard.add(ServiceTypes[0], ServiceTypes[1])
     ServiceTypesKeyboard.add(ServiceTypes[2], ServiceTypes[3])
-    ServiceTypesKeyboard.add(ServiceTypes[4], ServiceTypes[5])
-    ServiceTypesKeyboard.add(ServiceTypes[6])
+    ServiceTypesKeyboard.add(ServiceTypes[4])
     return ServiceTypesKeyboard
 
 

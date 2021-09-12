@@ -91,6 +91,13 @@ def select_issues_by_date(date, issues):
 
 
 def select_issues_by_period(date_one, date_two, issues):
+    """
+
+    :param date_one: начальная дата в формате год-месяц-день
+    :param date_two: конечная дата в формате год-месяц-день
+    :param issues:
+    :return: выбранные issues за период
+    """
     selected_issues = []
     while date_one <= date_two:
         iss: Models.Issue

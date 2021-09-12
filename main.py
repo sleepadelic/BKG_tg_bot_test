@@ -136,6 +136,11 @@ def main_handler(message: telebot.types.Message):
     if user.state == "conditions_report":
         condition_reports_menu(message, user)
         return
+
+    if user.state == "type_for_today":
+        create_and_send_report_for_today(message, time_now, user)
+        return
+
     if user.state == "type_by_date":
         create_and_send_report_by_date(message, time_now, user)
         return
@@ -357,6 +362,9 @@ def main_handler(message: telebot.types.Message):
 
 
 def condition_reports_menu(message, user):
+    if message.text == 'Выгрузка отчета за сегодня':
+        bot.send_message(user.id, 'Введите любой символ для продолжения').wait()
+        user.state = "type_for_today"
     if message.text == 'По дате':
         bot.send_message(user.id, 'Напишите дату (прим. 2021-06-26):').wait()
         user.state = "type_by_date"
@@ -379,6 +387,37 @@ def condition_reports_menu(message, user):
         bot.send_message(user.id, "Вы открыли сервисное меню. Выберите пункт из меню.",
                          reply_markup=keyboards.get_service_menu_keyboard())
         user.state = 'ServiceMenu'
+
+
+def create_and_send_report_for_today(message, time_now, user):
+    bot.send_message(user.id, "Формирование отчета может занять некоторое время (около трех минут)."
+                              "По завершению должно быть отправлено три файла.\n"
+                              "Пожалуйста, дождитесь сообщения о завершении операции.").wait()
+    filepath = settings.report_files_directory + str(datetime.datetime.now().date()) + str(
+        time_now.timestamp()) + "_" + str(
+        user.id)
+    combined_issues = issue_excel_export.combine_reports(f'{settings.output_files_directory}')
+    combined_issues = issue_excel_export.select_issues_by_date(time_now.date(), combined_issues)
+    combined_issues = issue_excel_export.load_addresses(combined_issues)
+    combined_issues = issue_excel_export.img_relative_path(combined_issues)
+    issue_excel_export.saved_yaml_file(combined_issues, filepath + '.yaml')
+    issue_excel_export.export_to_xlsx(combined_issues, filepath + '.xlsx', '')
+    issue_excel_export.saved_zip_file(combined_issues, filepath)
+    try:
+        bot.send_document(message.chat.id, open(filepath + '.xlsx', 'rb'), timeout=120).wait()
+        bot.send_document(message.chat.id, open(filepath + '.yaml', 'rb')).wait()
+        bot.send_document(message.chat.id, open(filepath + '.zip', 'rb'), timeout=60).wait()
+
+        bot.send_message(user.id, "Отчет был отправлен.", reply_markup=keyboards.get_service_menu_keyboard())
+        os.remove(Path(pathlib.Path.cwd(), filepath + '.xlsx'))
+        os.remove(Path(pathlib.Path.cwd(), filepath + '.yaml'))
+        os.remove(Path(pathlib.Path.cwd(), filepath + '.zip'))
+        logger.info(f"Был выгружен отчет за {time_now.date()} пользователю: {user.id}")
+    except OSError:
+        bot.send_message(user.id, "Что-то пошло не так, невозможно завершить действие "
+                                  "на данный момент", reply_markup=keyboards.get_service_menu_keyboard())
+        logger.exception("Today report exception")
+        return
 
 
 def create_and_send_report_by_type(message, time_now, user):
@@ -496,9 +535,8 @@ def enter_to_danger_zone(message, user):
 
 
 def service_menu_processing(message, time_now, user):
-    if message.text == 'Активные пользователи':
+    if message.text == 'Статистика':
         active_users(time_now, user)
-    if message.text == 'Кол-во обращений за день':
         combined_issues = issue_excel_export.combine_reports(f'{settings.output_files_directory}')
         today_issues = issue_excel_export.select_issues_by_date(time_now.date(), combined_issues)
         yesterday_issues = []
@@ -516,37 +554,8 @@ def service_menu_processing(message, time_now, user):
                                  reply_markup=keyboards.get_service_menu_keyboard())
         bot.send_message(user.id, "Сообщения об остановк бота через 5 минут отправлены.",
                          reply_markup=keyboards.get_service_menu_keyboard())
-    if message.text == 'Выгрузка отчета за сегодня':
-        bot.send_message(user.id, "Формирование отчета может занять некоторое время (около трех минут)."
-                                  "По завершению должно быть отправлено три файла.\n"
-                                  "Пожалуйста, дождитесь сообщения о завершении операции.").wait()
-        filepath = settings.report_files_directory + str(datetime.datetime.now().date()) + str(
-            time_now.timestamp()) + "_" + str(
-            user.id)
-        combined_issues = issue_excel_export.combine_reports(f'{settings.output_files_directory}')
-        combined_issues = issue_excel_export.select_issues_by_date(time_now.date(), combined_issues)
-        combined_issues = issue_excel_export.load_addresses(combined_issues)
-        combined_issues = issue_excel_export.img_relative_path(combined_issues)
-        issue_excel_export.saved_yaml_file(combined_issues, filepath + '.yaml')
-        issue_excel_export.export_to_xlsx(combined_issues, filepath + '.xlsx', '')
-        issue_excel_export.saved_zip_file(combined_issues, filepath)
-        try:
-            bot.send_document(message.chat.id, open(filepath + '.xlsx', 'rb'), timeout=120).wait()
-            bot.send_document(message.chat.id, open(filepath + '.yaml', 'rb')).wait()
-            bot.send_document(message.chat.id, open(filepath + '.zip', 'rb'), timeout=60).wait()
 
-            bot.send_message(user.id, "Отчет был отправлен.", reply_markup=keyboards.get_service_menu_keyboard())
-            os.remove(Path(pathlib.Path.cwd(), filepath + '.xlsx'))
-            os.remove(Path(pathlib.Path.cwd(), filepath + '.yaml'))
-            os.remove(Path(pathlib.Path.cwd(), filepath + '.zip'))
-            logger.info(f"Был выгружен отчет за {time_now.date()} пользователю: {user.id}")
-        except OSError:
-            bot.send_message(user.id, "Что-то пошло не так, невозможно завершить действие "
-                                      "на данный момент", reply_markup=keyboards.get_service_menu_keyboard())
-            logger.exception("Today report exception")
-            return
-
-    if message.text == 'Выгрузка отчета с условиями':
+    if message.text == 'Выгрузка отчета':
         bot.send_message(user.id, "Выберите тип отчета.", reply_markup=keyboards.get_report_types_keyboard())
         user.state = "conditions_report"
 
