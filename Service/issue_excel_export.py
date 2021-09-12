@@ -1,14 +1,13 @@
 import datetime
 import os
 import openpyxl
-import settings
 import zipfile
 from Service import issue_combiner
 import Models
-import secret
 from openpyxl import Workbook
 from dadata import Dadata
 
+config = issue_combiner.load_from_yaml("setting.yaml")
 
 def excel_export_main():
     issues = combine_reports()
@@ -19,9 +18,9 @@ def excel_export_main():
     print("Addresses loaded")
     issues = img_relative_path(issues)
     print("Img paths fixed")
-    saved_yaml_file(issues, f"../{settings.report_files_directory}combined_export.yaml")
+    saved_yaml_file(issues, f"../{config.report_files_directory}combined_export.yaml")
     print("Saved .yaml")
-    export_to_xlsx(issues, f'../{settings.report_files_directory}{str(datetime.datetime.now().date())}.xlsx', '../')
+    export_to_xlsx(issues, f'../{config.report_files_directory}{str(datetime.datetime.now().date())}.xlsx', '../')
     print("Report saved")
 
 
@@ -187,7 +186,7 @@ def reverse_geocode(lat, lon):
     Преобразует координаты в адрес
     :rtype: str address
     """
-    with Dadata(secret.dadata_token, secret.dadata_secret) as dadata:
+    with Dadata(config.dadata_token, config.dadata_secret) as dadata:
         return dadata.geolocate(name='address', lat=lat, lon=lon)
 
 
