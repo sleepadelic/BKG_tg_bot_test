@@ -1,14 +1,13 @@
 import datetime
 import os
 import openpyxl
-import settings
 import zipfile
 from Service import issue_combiner
 import Models
-import secret
 from openpyxl import Workbook
 from dadata import Dadata
 
+config = issue_combiner.load_from_yaml("setting.yaml")
 
 def excel_export_main():
     issues = combine_reports()
@@ -19,9 +18,9 @@ def excel_export_main():
     print("Addresses loaded")
     issues = img_relative_path(issues)
     print("Img paths fixed")
-    saved_yaml_file(issues, f"../{settings.report_files_directory}combined_export.yaml")
+    saved_yaml_file(issues, f"../{config.report_files_directory}combined_export.yaml")
     print("Saved .yaml")
-    export_to_xlsx(issues, f'../{settings.report_files_directory}{str(datetime.datetime.now().date())}.xlsx', '../')
+    export_to_xlsx(issues, f'../{config.report_files_directory}{str(datetime.datetime.now().date())}.xlsx', '../')
     print("Report saved")
 
 
@@ -91,6 +90,13 @@ def select_issues_by_date(date, issues):
 
 
 def select_issues_by_period(date_one, date_two, issues):
+    """
+
+    :param date_one: начальная дата в формате год-месяц-день
+    :param date_two: конечная дата в формате год-месяц-день
+    :param issues:
+    :return: выбранные issues за период
+    """
     selected_issues = []
     while date_one <= date_two:
         iss: Models.Issue
@@ -180,7 +186,7 @@ def reverse_geocode(lat, lon):
     Преобразует координаты в адрес
     :rtype: str address
     """
-    with Dadata(secret.dadata_token, secret.dadata_secret) as dadata:
+    with Dadata(config.dadata_token, config.dadata_secret) as dadata:
         return dadata.geolocate(name='address', lat=lat, lon=lon)
 
 

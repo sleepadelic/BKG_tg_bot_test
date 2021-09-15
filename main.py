@@ -13,17 +13,18 @@ from datetime import timedelta
 from ListTypesInputConstraint import IssueTypes
 from Models import User as User
 from Service import issue_excel_export
+from Service import issue_combiner
 
-bot = telebot.AsyncTeleBot(secret.Token)
 Users = []
-
+config = issue_combiner.load_from_yaml("setting.yaml")
+bot = telebot.AsyncTeleBot(config.Token)
 logger = None
 
 
 def logger_init():
     log = logging.getLogger("BKG_BOT")
     log.setLevel(logging.INFO)
-    fh = logging.FileHandler(f"{settings.log_file_directory}{str(datetime.date.today())}.log")  # Путь файла лога
+    fh = logging.FileHandler(f"{config.log_file_directory}{str(datetime.date.today())}.log")  # Путь файла лога
     formatter = logging.Formatter('%(asctime)s- %(levelname)s - %(message)s')
     fh.setFormatter(formatter)
     log.addHandler(fh)
@@ -34,10 +35,11 @@ logger = logger_init()
 
 
 def bot_main():
-    if settings.debug_mode != True:
+    if config.debug_mode != True:
         while True:
             try:
                 logger.info('bot started')
+                # issue_combiner.save_to_yml(config, "setting.yaml")
                 bot.polling(none_stop=True, interval=0)
             except Exception as e:
                 logger.exception("Main exception")
@@ -83,15 +85,39 @@ def main_handler(message: telebot.types.Message):
         bot.send_message(user.id, 'Получена ссылка на админ-панель сервера бота',
                          reply_markup=keyboards.get_danger_zone_keyboard())
         user.state = 'danger'
+        return
 
     if user.state == 'discharge':
         bot.send_message(user.id, 'Логи выгружены', reply_markup=keyboards.get_danger_zone_keyboard())
         logger.info(f"User {user.id} success uploading logs into DANGER ZONE")
         user.state = 'danger'
+        return
 
     if user.state == 'version':
         bot.send_message(user.id, 'Версия бота - ...', reply_markup=keyboards.get_danger_zone_keyboard())
         user.state = 'danger'
+        return
+
+    if user.state == 'delID':
+        try:
+            config.admins_ids.remove(message.text)
+            config.admins_DANGER_ZONE_ids.remove(message.text)
+            issue_combiner.save_to_yml(config, 'setting.yaml')
+            bot.send_message(user.id, f'ID {message.text} удален', reply_markup=keyboards.get_danger_zone_keyboard())
+            logger.info(f"User {user.id} delete ID {message.text}")
+        except:
+            bot.send_message(user.id, 'Нет такого ID', reply_markup=keyboards.get_danger_zone_keyboard())
+        user.state = 'danger'
+        return
+
+    if user.state == 'addID':
+        config.admins_ids.append(message.text)
+        config.admins_DANGER_ZONE_ids.append(message.text)
+        issue_combiner.save_to_yml(config, 'setting.yaml')
+        bot.send_message(user.id, f'ID {message.text} добавлен', reply_markup=keyboards.get_danger_zone_keyboard())
+        logger.info(f"User {user.id} append ID {message.text}")
+        user.state = 'danger'
+        return
 
     # Отгрузки перезагрузки
     if user.state == 'yes_restart':
@@ -136,6 +162,7 @@ def main_handler(message: telebot.types.Message):
     if user.state == "conditions_report":
         condition_reports_menu(message, user)
         return
+
     if user.state == "type_by_date":
         create_and_send_report_by_date(message, time_now, user)
         return
@@ -159,10 +186,10 @@ def main_handler(message: telebot.types.Message):
                                       "Пожалуйста, дождитесь сообщения о завершении операции.").wait()
             try:
                 date_time_obj = datetime.datetime.strptime(user.report_conditions.report_date, '%Y-%m-%d').date()
-                filepath = settings.report_files_directory \
+                filepath = config.report_files_directory \
                            + user.report_conditions.report_date + user.report_conditions.report_type + str(
                     time_now.timestamp()) + "_" + str(user.id)
-                combined_issues = issue_excel_export.combine_reports(f'{settings.output_files_directory}')
+                combined_issues = issue_excel_export.combine_reports(f'{config.output_files_directory}')
                 combined_issues = issue_excel_export.select_issues_by_type_and_date(date_time_obj,
                                                                                     user.report_conditions.report_type,
                                                                                     combined_issues)
@@ -215,10 +242,10 @@ def main_handler(message: telebot.types.Message):
         try:
             date_time_obj_one = datetime.datetime.strptime(user.report_conditions.report_date_one, '%Y-%m-%d').date()
             date_time_obj_two = datetime.datetime.strptime(user.report_conditions.report_date_two, '%Y-%m-%d').date()
-            filepath = settings.report_files_directory \
+            filepath = config.report_files_directory \
                        + user.report_conditions.report_date_one + "_" + user.report_conditions.report_date_two \
                        + str(time_now.timestamp()) + "_" + str(user.id)
-            combined_issues = issue_excel_export.combine_reports(f'{settings.output_files_directory}')
+            combined_issues = issue_excel_export.combine_reports(f'{config.output_files_directory}')
             combined_issues = issue_excel_export.select_issues_by_period(date_time_obj_one, date_time_obj_two,
                                                                          combined_issues)
             combined_issues = issue_excel_export.load_addresses(combined_issues)
@@ -304,7 +331,7 @@ def main_handler(message: telebot.types.Message):
     if user.state == 'state_ask_geo_or_address':
         if message.content_type == 'photo':
             # Формирование пути файла -картинки
-            filepath = settings.output_files_directory + user.issue.type + "_" + str(
+            filepath = config.output_files_directory + user.issue.type + "_" + str(
                 user.issue.send_time.timestamp()) + "_" + str(
                 user.id) + ".jpg"
             filepath = filepath.replace(' ', '')
@@ -339,7 +366,7 @@ def main_handler(message: telebot.types.Message):
     if user.state == 'state_create_issue':
         if message.content_type == 'text':
             user.issue.description = message.text
-            filepath: str = settings.output_files_directory + user.issue.type + "_" + str(
+            filepath: str = config.output_files_directory + user.issue.type + "_" + str(
                 user.issue.send_time.timestamp()) + "_" + str(
                 user.id) + ".yaml"
             save_issue_to_yaml(filepath, user.issue)
@@ -357,6 +384,9 @@ def main_handler(message: telebot.types.Message):
 
 
 def condition_reports_menu(message, user):
+    if message.text == 'Выгрузка отчета за сегодня':
+        create_and_send_report_for_today(message, user)
+        return
     if message.text == 'По дате':
         bot.send_message(user.id, 'Напишите дату (прим. 2021-06-26):').wait()
         user.state = "type_by_date"
@@ -381,15 +411,47 @@ def condition_reports_menu(message, user):
         user.state = 'ServiceMenu'
 
 
+def create_and_send_report_for_today(message, user):
+    bot.send_message(user.id, "Формирование отчета может занять некоторое время (около трех минут)."
+                              "По завершению должно быть отправлено три файла.\n"
+                              "Пожалуйста, дождитесь сообщения о завершении операции.").wait()
+    time_now = datetime.datetime.now()
+    filepath = config.report_files_directory + str(time_now.date()) + str(
+        time_now.timestamp()) + "_" + str(
+        user.id)
+    combined_issues = issue_excel_export.combine_reports(f'{config.output_files_directory}')
+    combined_issues = issue_excel_export.select_issues_by_date(time_now.date(), combined_issues)
+    combined_issues = issue_excel_export.load_addresses(combined_issues)
+    combined_issues = issue_excel_export.img_relative_path(combined_issues)
+    issue_excel_export.saved_yaml_file(combined_issues, filepath + '.yaml')
+    issue_excel_export.export_to_xlsx(combined_issues, filepath + '.xlsx', '')
+    issue_excel_export.saved_zip_file(combined_issues, filepath)
+    try:
+        bot.send_document(message.chat.id, open(filepath + '.xlsx', 'rb'), timeout=120).wait()
+        bot.send_document(message.chat.id, open(filepath + '.yaml', 'rb')).wait()
+        bot.send_document(message.chat.id, open(filepath + '.zip', 'rb'), timeout=60).wait()
+
+        bot.send_message(user.id, "Отчет был отправлен.", reply_markup=keyboards.get_service_menu_keyboard())
+        os.remove(Path(pathlib.Path.cwd(), filepath + '.xlsx'))
+        os.remove(Path(pathlib.Path.cwd(), filepath + '.yaml'))
+        os.remove(Path(pathlib.Path.cwd(), filepath + '.zip'))
+        logger.info(f"Был выгружен отчет за {time_now.date()} пользователю: {user.id}")
+    except OSError:
+        bot.send_message(user.id, "Что-то пошло не так, невозможно завершить действие "
+                                  "на данный момент", reply_markup=keyboards.get_service_menu_keyboard())
+        logger.exception("Today report exception")
+        return
+
+
 def create_and_send_report_by_type(message, time_now, user):
     types = message.text
     if message.text in IssueTypes:
         bot.send_message(user.id, "Формирование отчета может занять некоторое время (около трех минут)."
                                   "По завершению должно быть отправлено три файла.\n"
                                   "Пожалуйста, дождитесь сообщения о завершении операции.").wait()
-        filepath = settings.report_files_directory + types + str(
+        filepath = config.report_files_directory + types + str(
             time_now.timestamp()) + "_" + str(user.id)
-        combined_issues = issue_excel_export.combine_reports(f'{settings.output_files_directory}')
+        combined_issues = issue_excel_export.combine_reports(f'{config.output_files_directory}')
         combined_issues = issue_excel_export.select_issues_by_type(types, combined_issues)
         combined_issues = issue_excel_export.load_addresses(combined_issues)
         combined_issues = issue_excel_export.img_relative_path(combined_issues)
@@ -426,9 +488,9 @@ def create_and_send_report_by_date(message, time_now, user):
                                   "По завершению должно быть отправлено три файла.\n"
                                   "Пожалуйста, дождитесь сообщения о завершении операции.").wait()
         date_time_obj = datetime.datetime.strptime(date_time_str, '%Y-%m-%d').date()
-        filepath = settings.report_files_directory + date_time_str + str(
+        filepath = config.report_files_directory + date_time_str + str(
             time_now.timestamp()) + "_" + str(user.id)
-        combined_issues = issue_excel_export.combine_reports(f'{settings.output_files_directory}')
+        combined_issues = issue_excel_export.combine_reports(f'{config.output_files_directory}')
         combined_issues = issue_excel_export.select_issues_by_date(date_time_obj, combined_issues)
         combined_issues = issue_excel_export.load_addresses(combined_issues)
         combined_issues = issue_excel_export.img_relative_path(combined_issues)
@@ -460,32 +522,52 @@ def danger_zone_processing(message, user):
     if message.text == "Перезапуск бота":
         bot.send_message(user.id, 'Вы точно этого хотите? Да или Нет?')
         user.state = 'yes_restart'
+        return
     if message.text == "Обновление бота с остановкой службы":
         bot.send_message(user.id, 'Вы точно этого хотите? Да или Нет?')
         user.state = 'yes_updating_stop'
+        return
     if message.text == "Обновление бота с перезагрузкой":
         bot.send_message(user.id, 'Вы точно этого хотите? Да или Нет?')
         user.state = 'yes_updating_restart'
+        return
     if message.text == "Ссылка на админ-панель":
         user.state = 'links'
+        return
     if message.text == "Выгрузка логов":
         user.state = 'discharge'
+        return
     if message.text == "Версия бота":
         user.state = 'version'
+        return
+    if message.text == "Добавить ID":
+        bot.send_message(user.id, "Введите ID:")
+        logger.info(f"User {user.id} adds a new ID")
+        user.state = 'addID'
+        return
+    if message.text == "Удалить ID":
+        bot.send_message(user.id, "Введите ID:")
+        logger.info(f"User {user.id} delete ID")
+        user.state = 'delID'
+        return
     if message.text == "Назад":
         bot.send_message(user.id, "Вы открыли сервисное меню. Выберите пункт из меню.",
                          reply_markup=keyboards.get_service_menu_keyboard())
         user.state = 'ServiceMenu'
+        return
     if message.text == "В начало":
         bot.send_message(user.id,
                          "Бот для загрузки информации на портал bkg.sibadi.org, приветствует тебя!\n"
                          "Если Вам нужна помощь, по работе бота, введите команду /help",
                          reply_markup=keyboards.get_main_menu_keyboard()).wait()
         user.state = "auth_require"
+        return
 
 
 def enter_to_danger_zone(message, user):
-    if user.id in secret.admins_DANGER_ZONE_ids:
+    u_info: telebot.types.User
+    u_info = message.from_user
+    if str(user.id) in config.admins_DANGER_ZONE_ids:
         u_info: telebot.types.User
         u_info = message.from_user
         bot.send_message(user.id, "Вы открыли опасную зону :)", reply_markup=keyboards.get_danger_zone_keyboard())
@@ -496,10 +578,9 @@ def enter_to_danger_zone(message, user):
 
 
 def service_menu_processing(message, time_now, user):
-    if message.text == 'Активные пользователи':
+    if message.text == 'Статистика':
         active_users(time_now, user)
-    if message.text == 'Кол-во обращений за день':
-        combined_issues = issue_excel_export.combine_reports(f'{settings.output_files_directory}')
+        combined_issues = issue_excel_export.combine_reports(f'{config.output_files_directory}')
         today_issues = issue_excel_export.select_issues_by_date(time_now.date(), combined_issues)
         yesterday_issues = []
         yesterday_issues = issue_excel_export.select_issues_by_date((time_now.date() -
@@ -516,37 +597,8 @@ def service_menu_processing(message, time_now, user):
                                  reply_markup=keyboards.get_service_menu_keyboard())
         bot.send_message(user.id, "Сообщения об остановк бота через 5 минут отправлены.",
                          reply_markup=keyboards.get_service_menu_keyboard())
-    if message.text == 'Выгрузка отчета за сегодня':
-        bot.send_message(user.id, "Формирование отчета может занять некоторое время (около трех минут)."
-                                  "По завершению должно быть отправлено три файла.\n"
-                                  "Пожалуйста, дождитесь сообщения о завершении операции.").wait()
-        filepath = settings.report_files_directory + str(datetime.datetime.now().date()) + str(
-            time_now.timestamp()) + "_" + str(
-            user.id)
-        combined_issues = issue_excel_export.combine_reports(f'{settings.output_files_directory}')
-        combined_issues = issue_excel_export.select_issues_by_date(time_now.date(), combined_issues)
-        combined_issues = issue_excel_export.load_addresses(combined_issues)
-        combined_issues = issue_excel_export.img_relative_path(combined_issues)
-        issue_excel_export.saved_yaml_file(combined_issues, filepath + '.yaml')
-        issue_excel_export.export_to_xlsx(combined_issues, filepath + '.xlsx', '')
-        issue_excel_export.saved_zip_file(combined_issues, filepath)
-        try:
-            bot.send_document(message.chat.id, open(filepath + '.xlsx', 'rb'), timeout=120).wait()
-            bot.send_document(message.chat.id, open(filepath + '.yaml', 'rb')).wait()
-            bot.send_document(message.chat.id, open(filepath + '.zip', 'rb'), timeout=60).wait()
 
-            bot.send_message(user.id, "Отчет был отправлен.", reply_markup=keyboards.get_service_menu_keyboard())
-            os.remove(Path(pathlib.Path.cwd(), filepath + '.xlsx'))
-            os.remove(Path(pathlib.Path.cwd(), filepath + '.yaml'))
-            os.remove(Path(pathlib.Path.cwd(), filepath + '.zip'))
-            logger.info(f"Был выгружен отчет за {time_now.date()} пользователю: {user.id}")
-        except OSError:
-            bot.send_message(user.id, "Что-то пошло не так, невозможно завершить действие "
-                                      "на данный момент", reply_markup=keyboards.get_service_menu_keyboard())
-            logger.exception("Today report exception")
-            return
-
-    if message.text == 'Выгрузка отчета с условиями':
+    if message.text == 'Выгрузка отчета':
         bot.send_message(user.id, "Выберите тип отчета.", reply_markup=keyboards.get_report_types_keyboard())
         user.state = "conditions_report"
 
@@ -554,18 +606,18 @@ def service_menu_processing(message, time_now, user):
         enter_to_danger_zone(message, user)
 
     if message.text == 'Выгрузка сырых файлов':
-        filepath = settings.report_files_directory + "backup" + "_" + str(datetime.datetime.now().date()) + str(
+        filepath = config.report_files_directory + "backup" + "_" + str(datetime.datetime.now().date()) + str(
             time_now.timestamp()) + "_" + str(
             user.id)
         try:
-            issue_excel_export.open_and_load_zip_backup(f'{settings.output_files_directory}', filepath)
+            issue_excel_export.open_and_load_zip_backup(f'{config.output_files_directory}', filepath)
             bot.send_message(user.id, "Выполнение запроса может занять некоторое время (не больше одной минуты). "
                                       "Пожалуйста, подождите.")
             bot.send_document(message.chat.id, open(filepath + '.zip', 'rb'), timeout=60).wait()
             bot.send_message(user.id, "Выгрузка была завершена", reply_markup=keyboards.get_service_menu_keyboard())
             os.remove(Path(pathlib.Path.cwd(), filepath + '.zip'))
             logger.info(
-                f"Были выгружены все файлы из {settings.output_files_directory} на момент {time_now.date()} "
+                f"Были выгружены все файлы из {config.output_files_directory} на момент {time_now.date()} "
                 f"пользователю: {user.id}")
         except OSError:
             bot.send_message(user.id, "Что-то пошло не так, невозможно завершить действие "
@@ -592,7 +644,9 @@ def active_users(time_now, user):
 
 
 def enter_to_service_menu(message, user):
-    if user.id in secret.admins_ids:
+    u_info: telebot.types.User
+    u_info = message.from_user
+    if user.id in secret.admins_ids or u_info.username in secret.admins_ids:
         u_info: telebot.types.User
         u_info = message.from_user
         bot.send_message(user.id, "Вы открыли сервисное меню. Выберите пункт из меню.",
@@ -609,7 +663,7 @@ def find_user_in_list(message, user):
             user = u
             user.last_action_time = datetime.datetime.now()
         else:
-            if settings.isSessionCheckEnabled:
+            if config.isSessionCheckEnabled:
                 session_time_check(datetime.datetime.now(), u)
     return user
 
@@ -619,7 +673,7 @@ def status_init(user):
                      "Бот для загрузки информации на портал bkg.sibadi.org, приветствует тебя!\n"
                      "Если Вам нужна помощь, по работе бота, введите команду /help",
                      reply_markup=keyboards.get_main_menu_keyboard()).wait()
-    if settings.isAuthRequire:
+    if config.isAuthRequire:
         user.state = 'auth_require'
     else:
         user.state = 'state_ask_type'
