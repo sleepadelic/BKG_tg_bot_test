@@ -9,6 +9,7 @@ def get_danger_zone_keyboard():
     DANGERTypesKeyboard.add(DANGERTypes[2], DANGERTypes[3])
     DANGERTypesKeyboard.add(DANGERTypes[4], DANGERTypes[5])
     DANGERTypesKeyboard.add(DANGERTypes[6], DANGERTypes[7])
+    DANGERTypesKeyboard.add(DANGERTypes[8],DANGERTypes[9])
     return DANGERTypesKeyboard
 
 

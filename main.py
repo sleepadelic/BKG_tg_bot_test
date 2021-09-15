@@ -85,15 +85,39 @@ def main_handler(message: telebot.types.Message):
         bot.send_message(user.id, 'Получена ссылка на админ-панель сервера бота',
                          reply_markup=keyboards.get_danger_zone_keyboard())
         user.state = 'danger'
+        return
 
     if user.state == 'discharge':
         bot.send_message(user.id, 'Логи выгружены', reply_markup=keyboards.get_danger_zone_keyboard())
         logger.info(f"User {user.id} success uploading logs into DANGER ZONE")
         user.state = 'danger'
+        return
 
     if user.state == 'version':
         bot.send_message(user.id, 'Версия бота - ...', reply_markup=keyboards.get_danger_zone_keyboard())
         user.state = 'danger'
+        return
+
+    if user.state == 'delID':
+        try:
+            config.admins_ids.remove(message.text)
+            config.admins_DANGER_ZONE_ids.remove(message.text)
+            issue_combiner.save_to_yml(config, 'setting.yaml')
+            bot.send_message(user.id, f'ID {message.text} удален', reply_markup=keyboards.get_danger_zone_keyboard())
+            logger.info(f"User {user.id} delete ID {message.text}")
+        except:
+            bot.send_message(user.id, 'Нет такого ID', reply_markup=keyboards.get_danger_zone_keyboard())
+        user.state = 'danger'
+        return
+
+    if user.state == 'addID':
+        config.admins_ids.append(message.text)
+        config.admins_DANGER_ZONE_ids.append(message.text)
+        issue_combiner.save_to_yml(config, 'setting.yaml')
+        bot.send_message(user.id, f'ID {message.text} добавлен', reply_markup=keyboards.get_danger_zone_keyboard())
+        logger.info(f"User {user.id} append ID {message.text}")
+        user.state = 'danger'
+        return
 
     # Отгрузки перезагрузки
     if user.state == 'yes_restart':
@@ -498,32 +522,52 @@ def danger_zone_processing(message, user):
     if message.text == "Перезапуск бота":
         bot.send_message(user.id, 'Вы точно этого хотите? Да или Нет?')
         user.state = 'yes_restart'
+        return
     if message.text == "Обновление бота с остановкой службы":
         bot.send_message(user.id, 'Вы точно этого хотите? Да или Нет?')
         user.state = 'yes_updating_stop'
+        return
     if message.text == "Обновление бота с перезагрузкой":
         bot.send_message(user.id, 'Вы точно этого хотите? Да или Нет?')
         user.state = 'yes_updating_restart'
+        return
     if message.text == "Ссылка на админ-панель":
         user.state = 'links'
+        return
     if message.text == "Выгрузка логов":
         user.state = 'discharge'
+        return
     if message.text == "Версия бота":
         user.state = 'version'
+        return
+    if message.text == "Добавить ID":
+        bot.send_message(user.id, "Введите ID:")
+        logger.info(f"User {user.id} adds a new ID")
+        user.state = 'addID'
+        return
+    if message.text == "Удалить ID":
+        bot.send_message(user.id, "Введите ID:")
+        logger.info(f"User {user.id} delete ID")
+        user.state = 'delID'
+        return
     if message.text == "Назад":
         bot.send_message(user.id, "Вы открыли сервисное меню. Выберите пункт из меню.",
                          reply_markup=keyboards.get_service_menu_keyboard())
         user.state = 'ServiceMenu'
+        return
     if message.text == "В начало":
         bot.send_message(user.id,
                          "Бот для загрузки информации на портал bkg.sibadi.org, приветствует тебя!\n"
                          "Если Вам нужна помощь, по работе бота, введите команду /help",
                          reply_markup=keyboards.get_main_menu_keyboard()).wait()
         user.state = "auth_require"
+        return
 
 
 def enter_to_danger_zone(message, user):
-    if user.id in secret.admins_DANGER_ZONE_ids:
+    u_info: telebot.types.User
+    u_info = message.from_user
+    if str(user.id) in config.admins_DANGER_ZONE_ids:
         u_info: telebot.types.User
         u_info = message.from_user
         bot.send_message(user.id, "Вы открыли опасную зону :)", reply_markup=keyboards.get_danger_zone_keyboard())
@@ -600,7 +644,9 @@ def active_users(time_now, user):
 
 
 def enter_to_service_menu(message, user):
-    if user.id in secret.admins_ids:
+    u_info: telebot.types.User
+    u_info = message.from_user
+    if user.id in secret.admins_ids or u_info.username in secret.admins_ids:
         u_info: telebot.types.User
         u_info = message.from_user
         bot.send_message(user.id, "Вы открыли сервисное меню. Выберите пункт из меню.",

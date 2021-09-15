@@ -11,4 +11,3 @@ class Settings:
     isAuthRequire = True  # test versions auth
     report_files_directory = ''
     debug_mode = False
-
