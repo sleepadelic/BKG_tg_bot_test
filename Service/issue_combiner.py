@@ -1,45 +1,37 @@
 import os
-
 import yaml
 
-import Models
-from Models import Issue
 
-issues = []
-
-
-def combiner_main():
-    folder_path = "../data/"
-    issues = open_and_load_to_array(folder_path)
-    save_to_yml(issues, "../data/combined_export.yaml")
-    print_issues_with_address()
-
-
-def open_and_load_to_array(folder_path):
-    arr = []
+def upload_yamls_to_list(folder_path):
+    """
+    Combine objects from yaml files to list
+    :param folder_path: path to folder with yaml files to combine to list
+    :return:
+    """
+    loaded_list = []
     for file in os.listdir(folder_path):
         if file.endswith(".yaml"):
-            arr.append(load_from_yaml(folder_path+file))
-    return arr
+            loaded_list.append(load_from_yaml(folder_path + file))
+    return loaded_list
 
 
 def load_from_yaml(filepath):
+    """
+    Load object from yaml file
+    :param filepath: file path
+    :return: loaded object
+    """
     with open(filepath, "r", encoding="utf-8") as ff:
         return yaml.load(ff, Loader=yaml.UnsafeLoader)
 
 
-def print_issues_with_address():
-    iss: Models.Issue
-    for iss in issues:
-        if iss.address is not None:
-            print(iss)
-
-
-def save_to_yml(serializable_obj, file_path):
+def save_to_yml(object_to_save, file_path):
+    """
+    Save object to yaml file
+    :param object_to_save: object to save
+    :param file_path: saving file path
+    :return: file path
+    """
     with open(file_path, 'w', encoding="utf-8") as ff:
-        yaml.dump(serializable_obj, ff, default_flow_style=False, allow_unicode=True)
+        yaml.dump(object_to_save, ff, default_flow_style=False, allow_unicode=True)
     return file_path
-
-
-if __name__ == '__main__':
-    combiner_main()
