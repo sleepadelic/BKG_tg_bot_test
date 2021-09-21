@@ -2,27 +2,12 @@ import datetime
 import os
 import openpyxl
 import zipfile
-from Service import issue_combiner
+from Service import Yaml_processing
 import Models
 from openpyxl import Workbook
 from dadata import Dadata
 
-config = issue_combiner.load_from_yaml("setting.yaml")
-
-def excel_export_main():
-    issues = combine_reports()
-    print("combined")
-    issues = select_issues_by_date(datetime.datetime.now().date(), issues)
-    print("sorted")
-    issues = load_addresses(issues)
-    print("Addresses loaded")
-    issues = img_relative_path(issues)
-    print("Img paths fixed")
-    saved_yaml_file(issues, f"../{config.report_files_directory}combined_export.yaml")
-    print("Saved .yaml")
-    export_to_xlsx(issues, f'../{config.report_files_directory}{str(datetime.datetime.now().date())}.xlsx', '../')
-    print("Report saved")
-
+config = Yaml_processing.load_from_yaml("setting.yaml")
 
 def export_to_xlsx(issues, filename, route):
     """
@@ -57,6 +42,11 @@ def export_to_xlsx(issues, filename, route):
 
 
 def Create_headlines(ws):
+    """
+    Создание заголовков в таблице
+    :param ws: openpyxl Worksheet
+    :return:
+    """
     ws['A1'] = "№"
     ws['B1'] = "Дата"
     ws['C1'] = "Тип обращения"
@@ -70,8 +60,7 @@ def combine_reports(folder_path="../data/"):
     """
     Объединяет отчёты в один файл
     """
-    issues = issue_combiner.open_and_load_to_array(folder_path)
-    return issues
+    return Yaml_processing.upload_yamls_to_list(folder_path)
 
 
 def select_issues_by_date(date, issues):
@@ -91,11 +80,11 @@ def select_issues_by_date(date, issues):
 
 def select_issues_by_period(date_one, date_two, issues):
     """
-
+    Выбор issue за период из списка
     :param date_one: начальная дата в формате год-месяц-день
     :param date_two: конечная дата в формате год-месяц-день
-    :param issues:
-    :return: выбранные issues за период
+    :param issues: список Models.Issue
+    :return: список issues за период
     """
     selected_issues = []
     while date_one <= date_two:
@@ -110,9 +99,10 @@ def select_issues_by_period(date_one, date_two, issues):
 
 def select_issues_by_type(type: str, issues):
     """
+    Выбор issue по типу
     :param type: выбор с клавиатуры, строка
     :param issues: список issues
-    :return: выбранные issues по типу
+    :return: список issues по типу
     """
     selected_issues = []
     iss: Models.Issue
@@ -125,21 +115,22 @@ def select_issues_by_type(type: str, issues):
 
 def select_issues_by_type_and_date(date, type: str, issues):
     """
+    Выбор issue по типу и дате
     :param date: дата в формате год-месяц-день
     :param type: выбор с клавиатуры, строка
     :param issues: список issues
-    :return: выбранные issues по дате и типу
+    :return: список issues по дате и типу
     """
     selected_issues = select_issues_by_date(date, issues)
     selected_issues = select_issues_by_type(type, selected_issues)
     return selected_issues
 
 
-def saved_yaml_file(issues, filename):
-    issue_combiner.save_to_yml(issues, filename)
+def save_to_yaml_file(issues, filename):
+    Yaml_processing.save_to_yml(issues, filename)
 
 
-def saved_zip_file(issues, filename):
+def save_to_zip_file(issues, filename):
     new_arch = zipfile.ZipFile(filename + '.zip', mode="w")
     iss: Models.Issue
     for iss in issues:
@@ -151,7 +142,7 @@ def open_and_load_zip_backup(folder_path, filename):
     new_arch = zipfile.ZipFile(filename + '.zip', mode="w")
     for file in os.listdir(folder_path):
         if file.endswith(".yaml") or file.endswith(".jpg"):
-            new_arch.write(folder_path+file)
+            new_arch.write(folder_path + file)
     new_arch.close()
 
 
@@ -188,7 +179,3 @@ def reverse_geocode(lat, lon):
     """
     with Dadata(config.dadata_token, config.dadata_secret) as dadata:
         return dadata.geolocate(name='address', lat=lat, lon=lon)
-
-
-if __name__ == '__main__':
-    excel_export_main()
